@@ -157,6 +157,16 @@ main>*,section.panel>*,.kpis>*{min-width:0}
 .g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.bxh{font-family:var(--f-display);color:var(--red);font-size:14px}
 .linkbtn{background:none;border:0;color:var(--red);font-weight:600;cursor:pointer;text-decoration:underline;padding:0 4px}
 .who .out{background:none;border:0;color:inherit;opacity:.85;font-size:12px;text-decoration:underline;padding:2px 0;cursor:pointer;display:block;margin-left:auto}
+/* ซ่อมบำรุงเครื่องจักร */
+.tile.mt{border-color:var(--slate)}
+.mtbody{display:grid;gap:16px;min-width:0}
+.chip.over{background:var(--red);color:#fff}.chip.soon{background:var(--warn-tint);color:var(--warn)}.chip.okc{background:var(--ok-tint);color:var(--ok)}
+.entry .linkbtn{padding:0;text-decoration:none;white-space:nowrap}
+.mtd{grid-column:1/-1;font-size:13.5px}.mtd p{margin:2px 0;overflow-wrap:anywhere}
+.mtclose{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:6px}.mtclose .ghost{min-height:46px;padding:0 14px}
+.mtck{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+#mf{display:grid;gap:16px}
+.mtck input{width:22px;height:22px;min-height:22px;flex:none;margin:1px 0 0;padding:0;accent-color:var(--red)}
 </style>
 </head>
 <body>
@@ -336,12 +346,13 @@ const TILES=[
   ['box','ลงกล่อง','กล่องดีตามขนาด'],
   ['dispatch','จ่ายออก','ส่งของ ช่องทางขาย ลูกค้า'],
   ['count','ตรวจนับสต๊อก','ยอดนับจริง ห้องเย็น/คลัง'],
-  ['labor','ค่าแรง / OT','ยอดรวมค่าแรงและ OT รายวัน','lab']
+  ['labor','ค่าแรง / OT','ยอดรวมค่าแรงและ OT รายวัน','lab'],
+  ['maint','ซ่อมบำรุงเครื่องจักร','บันทึกงานซ่อม แผน PM เวลาหยุดเครื่อง','mt']
 ];
 function home(){
   const d=new Date(B.today+'T00:00');
   $('#view').innerHTML=`<div class="hello"><h2>สวัสดีค่ะ คุณ${esc(B.user.name)}</h2><p>${d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} • โรงงาน ${esc(factory)}</p></div>
-  ${B.isCeo?'<button type="button" class="tile ceo" id="ceoBtn"><b>ภาพรวม CEO</b><span>ต้นทุน/ลัง สต๊อกปลา ค่าแรง ยอดผลิต</span></button>':''}<div class="tiles">${TILES.filter(t=>t[0]!=='labor'||B.isLabor).map(t=>`<button type="button" class="tile ${t[3]||''}" data-go="${t[0]}"><b>${t[1]}</b><span>${t[2]}</span></button>`).join('')}</div>
+  ${B.isCeo?'<button type="button" class="tile ceo" id="ceoBtn"><b>ภาพรวม CEO</b><span>ต้นทุน/ลัง สต๊อกปลา ค่าแรง ยอดผลิต</span></button>':''}<div class="tiles">${TILES.filter(t=>(t[0]!=='labor'||B.isLabor)&&(t[0]!=='maint'||mtCan())).map(t=>`<button type="button" class="tile ${t[3]||''}" data-go="${t[0]}"><b>${t[1]}</b><span>${t[2]}</span></button>`).join('')}</div>
   ${B.isAdmin?`<div class="admin"><a href="${esc(B.mainUrl)}" target="_blank" rel="noopener">เปิดไฟล์หลัก (ราคา ค่าแรง ต้นทุน)</a><button type="button" id="syncBtn">ซิงก์ข้อมูลเข้าไฟล์หลักตอนนี้</button></div>`:''}
   <section class="panel"><div class="rhead"><h3>บันทึกของฉันวันนี้</h3><button type="button" class="linkbtn" id="histBtn">ดูย้อนหลัง 7 วัน →</button></div><div class="list" id="recent"></div></section>`;
   $('#histBtn').onclick=fHist;
@@ -416,7 +427,7 @@ function addLine(container,html,label){
   const rm=d.querySelector('.rm'); if(rm) rm.onclick=()=>{d.remove();$$('.item-head b',box).forEach((b,i)=>b.textContent=label+' '+(i+1));};
   box.appendChild(d); return d;
 }
-function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,dispatch:fDispatch,count:fCount,labor:fLabor})[k]();}
+function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint})[k]();}
 
 /* ---------- รับเข้า ---------- */
 function fReceive(){
@@ -655,6 +666,146 @@ function fCount(){
     if(!lines.length&&!errs.length)errs.push('ยังไม่ได้กรอกยอดนับ');
     const note=val(null,'#note');
     return {errs,sum,head:'ตรวจนับประจำ'+t+' • '+loc,payload:{loc,note:'[นับประจำ'+t+']'+(note?' '+note:''),lines}};};
+}
+
+/* ---------- ซ่อมบำรุงเครื่องจักร (loads its data only when this tab is opened) ---------- */
+const MT_TEST=true; // true = show the "ทดสอบ" chip (trial period)
+const mtCan=()=>!!B.mt; // server decides: ผู้ดูแล + trial list, or everyone after the trial
+let MT=null, mtFac=null, mtView='pm', mtHistM='';
+const mtFreq=f=>({1:'ทุกวัน',7:'ทุกสัปดาห์',30:'ทุกเดือน',180:'ทุก 6 เดือน',365:'ทุกปี'})[f]||'ทุก '+f+' วัน';
+const mtD=s=>s?dshort(s):'–';
+const mtName=x=>esc(x.machine)+(x.units>1||x.unit>1?' <span class="opt">เครื่องที่ '+x.unit+'</span>':'');
+const mtMin=v=>{v=Number(v)||0;return v>=60?fmt(Math.floor(v/60))+' ชม. '+(v%60?v%60+' นาที':''):v+' นาที';};
+function fMaint(){
+  if(!mtFac)mtFac=factory;
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ซ่อมบำรุงเครื่องจักร</h2>${MT_TEST?'<span class="chip">ทดสอบ</span>':''}</div>
+  <section class="panel"><div class="field"><span class="lbl">โรงงาน</span>${seg('mfac',['J&N','สุภาภรณ์'],mtFac)}</div>
+  <div class="kpis" id="mtSum"></div>
+  <button type="button" class="primary" id="mtNew">+ บันทึกงานซ่อมบำรุง</button>
+  <div class="field"><span class="lbl">ดูข้อมูล</span>${seg('mview',[['pm','แผน PM'],['open','งานค้าง'],['hist','ประวัติ'],['down','เวลาหยุดเครื่อง']],mtView)}</div></section>
+  <div id="mt" class="mtbody"></div>`;
+  $('#back').onclick=home;
+  $('[data-seg="mfac"]').addEventListener('segchange',e=>{mtFac=e.detail;MT=null;mtHistM='';mtLoad();});
+  $('[data-seg="mview"]').addEventListener('segchange',e=>{mtView=e.detail;mtDraw();});
+  $('#mtNew').onclick=()=>{if(MT)mtForm({});};
+  window.scrollTo(0,0);
+  if(MT&&MT.fac===mtFac)mtDraw();else mtLoad();
+}
+function mtLoad(){
+  $('#mtSum').innerHTML='';$('#mt').innerHTML='<div class="center" style="min-height:30vh"><div class="spinner"></div></div>';
+  const f=mtFac;
+  run('mtLoad',f).then(d=>{if(f!==mtFac||!$('#mt'))return;MT=d;mtDraw();}).catch(e=>{if($('#mt'))$('#mt').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
+}
+function mtDraw(){
+  if(!MT||!$('#mt'))return;
+  const c=s=>MT.pm.filter(x=>x.st===s).length;
+  const month=MT.down.months[MT.down.months.length-1], li=MT.down.months.length-1;
+  const dn=MT.down.rows.reduce((a,r)=>a+r.m[li],0);
+  $('#mtSum').innerHTML=`<div class="kpi${c('over')?' hero':''}"><span>PM เลยกำหนด</span><b class="num">${c('over')}</b><small>ใกล้ถึงกำหนด ${c('soon')} • ยังไม่เคยบันทึก ${c('never')}</small></div>
+  <div class="kpi"><span>งานประจำวัน ยังไม่ทำวันนี้</span><b class="num">${c('daily')}</b><small>จาก ${MT.pm.filter(x=>x.freq===1).length} งาน</small></div>
+  <div class="kpi"><span>งานค้าง (รอติดตาม)</span><b class="num">${MT.open.length}</b><small>แตะ "งานค้าง" เพื่อปิดงาน</small></div>
+  <div class="kpi"><span>หยุดเครื่อง เดือนนี้</span><b class="num">${fmt(dn)} นาที</b><small>${dn?mtMin(dn):'ยังไม่มีการหยุดเครื่อง'}</small></div>`;
+  ({pm:mtPm,open:mtOpen,hist:mtHist,down:mtDown})[mtView]();
+}
+/* แผน PM: เลยกำหนด / ใกล้ถึงกำหนด / ประจำวัน / ยังไม่เคยบันทึก / ปกติ */
+function mtPm(){
+  const G=[['over','เลยกำหนด','over'],['soon','ใกล้ถึงกำหนด','soon'],['daily','งานประจำวัน • ยังไม่ทำวันนี้',''],['never','ยังไม่เคยบันทึก',''],['ok','ปกติ / ทำแล้ว','okc']];
+  const row=(x,g)=>{const i=MT.pm.indexOf(x);
+    const when=x.st==='over'?'เลยมา '+(-x.days)+' วัน':x.st==='soon'?(x.days===0?'ถึงกำหนดวันนี้':'อีก '+x.days+' วัน'):x.st==='daily'?'วันนี้ยังไม่ทำ':x.st==='never'?'ยังไม่เคยบันทึก':x.freq===1?'ทำแล้ววันนี้':'กำหนด '+mtD(x.next);
+    return `<div class="entry"><span class="t">${mtName(x)}</span><button type="button" class="linkbtn" data-pm="${i}">บันทึก →</button>
+    <div class="meta"><span class="chip ${g[2]}">${esc(when)}</span><span>${esc(x.task)}</span><span>${mtFreq(x.freq)} • ล่าสุด ${mtD(x.last)}</span></div></div>`;};
+  $('#mt').innerHTML=MT.pm.length?G.map(g=>{const L=MT.pm.filter(x=>x.st===g[0]).sort((a,b)=>(a.days==null?0:a.days)-(b.days==null?0:b.days));
+    if(!L.length)return '';
+    const body=`<div class="list">${L.map(x=>row(x,g)).join('')}</div>`;
+    return g[0]==='ok'||g[0]==='never'?`<section class="panel"><details><summary>${g[1]} (${L.length})</summary>${body}</details></section>`:`<section class="panel"><h3>${g[1]} <span class="opt">(${L.length})</span></h3>${body}</section>`;}).join('')
+    +'<p class="hint" style="text-align:center">ความถี่และรายการงาน แก้ได้ในชีต "แผน PM" • เตือนล่วงหน้า 7 วัน (งานรายเดือนขึ้นไป) / 1 วัน (งานรายสัปดาห์)</p>'
+    :'<section class="panel"><div class="empty">ยังไม่มีแผน PM ของโรงงานนี้</div></section>';
+  $$('[data-pm]').forEach(b=>b.onclick=()=>{const x=MT.pm[b.dataset.pm];mtForm({machine:x.machine,unit:x.unit,type:'PM ตามแผน',pm:[x.code]});});
+}
+const mtEntry=(l,extra)=>`<div class="entry"><span class="t">${mtName(l)}</span><span class="kg">${l.down?fmt(l.down)+' นาที':''}</span>
+  <div class="meta"><span class="chip ${l.status==='รอติดตาม'?'soon':'okc'}">${esc(l.status)}</span><span class="chip">${esc(l.type)}</span><span>${mtD(l.date)} ${esc(l.time)} น. • ${esc(l.who)}</span></div>
+  <div class="mtd">${l.problem?`<p><b>ปัญหา:</b> ${esc(l.problem)}</p>`:''}<p><b>ที่ทำ:</b> ${esc(l.action)}</p>${l.parts?`<p><b>อะไหล่:</b> ${esc(l.parts)}</p>`:''}${l.checks?`<p><b>ผลตรวจ:</b> ${esc(l.checks)}</p>`:''}${l.closedBy?`<p><b>ปิดงาน:</b> ${esc(l.closedBy)} ${esc(l.closedAt)}${l.closeNote?' • '+esc(l.closeNote):''}</p>`:''}</div>${extra||''}</div>`;
+function mtOpen(){
+  $('#mt').innerHTML=`<section class="panel"><h3>งานค้าง รอติดตาม <span class="opt">(${MT.open.length})</span></h3><div class="list">${MT.open.length?MT.open.map(l=>mtEntry(l,`<div class="mtclose"><input class="cn" placeholder="หมายเหตุปิดงาน (ถ้ามี)" aria-label="หมายเหตุปิดงาน"><button type="button" class="ghost" data-close="${esc(l.id)}">ปิดงาน ✓</button></div>`)).join(''):'<div class="empty">ไม่มีงานค้าง</div>'}</div></section>`;
+  $$('[data-close]').forEach(b=>b.onclick=()=>{b.disabled=true;const f=mtFac;
+    run('mtClose',b.dataset.close,b.parentElement.querySelector('.cn').value.trim()).then(d=>{if(f!==mtFac)return;MT=d;toast('ปิดงานแล้ว ✓');mtDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+}
+function mtHist(){
+  const L=MT.logs.filter(l=>!mtHistM||l.machine===mtHistM);
+  const dn=L.reduce((a,l)=>a+l.down,0);
+  $('#mt').innerHTML=`<section class="panel"><div class="field"><label for="mhm">เครื่องจักร</label><select id="mhm"><option value="">ทุกเครื่อง</option>${MT.machines.map(m=>`<option${m.name===mtHistM?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
+  <div class="hint">${L.length} รายการ • หยุดเครื่องรวม ${fmt(dn)} นาที${MT.total>MT.logs.length?' • แสดง '+MT.logs.length+' รายการล่าสุด (ทั้งหมดอยู่ในชีต)':''}</div>
+  <div class="list">${L.length?L.slice(0,150).map(l=>mtEntry(l)).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></section>`;
+  $('#mhm').onchange=()=>{mtHistM=$('#mhm').value;mtHist();};
+}
+function mtDown(){
+  const M=MT.down.months, rows=MT.down.rows.map(r=>({...r,t:r.m.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.m[M.length-1]-a.m[M.length-1]||b.t-a.t);
+  const ml=k=>new Date(k+'-01T00:00').toLocaleDateString('th-TH',{month:'short'});
+  const tot=M.map((_,i)=>rows.reduce((a,r)=>a+r.m[i],0));
+  $('#mt').innerHTML=`<section class="panel"><h3>เวลาหยุดเครื่องรายเดือน (นาที)</h3>${rows.length?`<div class="tbl"><table><thead><tr><th>เครื่องจักร</th>${M.map(k=>`<th>${ml(k)}</th>`).join('')}<th>รวม</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${esc(r.machine)}</td>${r.m.map(v=>`<td class="num">${v?fmt(v):'–'}</td>`).join('')}<td class="num"><b>${fmt(r.t)}</b></td></tr>`).join('')}
+  <tr><td><b>รวมทุกเครื่อง</b></td>${tot.map(v=>`<td class="num"><b>${v?fmt(v):'–'}</b></td>`).join('')}<td class="num"><b>${fmt(tot.reduce((a,b)=>a+b,0))}</b></td></tr></tbody></table></div>
+  <p class="hint">6 เดือนล่าสุด • โรงงาน ${esc(MT.fac)} • เรียงจากเครื่องที่หยุดมากที่สุดในเดือนนี้ • นับทุกประเภทงานที่กรอกนาทีหยุดเครื่อง</p>`:'<div class="empty">ยังไม่มีการหยุดเครื่องใน 6 เดือนนี้</div>'}</section>`;
+}
+/* แบบฟอร์มบันทึกงาน */
+function mtForm(pre){
+  const now=new Date(), hm=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>บันทึกงานซ่อมบำรุง</h2></div>
+  <form id="mf" novalidate><section class="panel"><div class="hint">โรงงาน <b>${esc(MT.fac)}</b></div>
+  <div class="grid2 keep"><div class="field"><label for="md">วันที่</label><input type="date" id="md" value="${MT.today}" max="${MT.today}"></div>
+  <div class="field"><label for="mtm">เวลา</label><input type="time" id="mtm" value="${hm}"></div></div>
+  <div class="field"><label for="mm">เครื่องจักร</label><select id="mm"><option value="">เลือกเครื่องจักร</option>${MT.machines.map(m=>`<option${m.name===pre.machine?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
+  <div class="field" id="muF" hidden><label for="mu">เครื่องที่</label><select id="mu"></select></div>
+  <div class="field"><span class="lbl">ประเภทงาน</span>${seg('mtype',MT.types,pre.type||'')}</div></section>
+  <section class="panel" id="mpmP" hidden><h3>งาน PM ที่ทำ</h3><div id="mpm" class="list"></div></section>
+  <section class="panel" id="mckP" hidden><h3>รายการตรวจบังคับ</h3><div class="hint">ต้องกรอกทุกข้อ • ถ้ามีข้อ "ไม่ผ่าน" ให้เลือกสถานะ รอติดตาม</div><div id="mck" class="list"></div></section>
+  <section class="panel"><div class="field"><label for="mp">ปัญหา / อาการ <span class="opt" id="mpO">(ถ้ามี)</span></label><textarea id="mp"></textarea></div>
+  <div class="field"><label for="ma">สิ่งที่ทำ / การแก้ไข</label><textarea id="ma"></textarea></div>
+  <div class="field"><label for="mpt">อะไหล่ที่เปลี่ยน <span class="opt">(ถ้ามี)</span></label><input id="mpt"></div>
+  <div class="grid2 keep"><div class="field"><label for="mdn">หยุดเครื่อง (นาที)</label><input id="mdn" class="num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+  <div class="field"><label for="mw">ผู้ทำ</label><input id="mw" value="${esc(B.user.name)}"></div></div>
+  <div class="field"><span class="lbl">สถานะ</span>${seg('mst',MT.statuses,'เสร็จ')}</div></section>
+  <div class="err" id="merr" hidden></div><button type="submit" class="primary" id="msave">บันทึก</button></form>`;
+  $('#back').onclick=fMaint;
+  const mach=()=>MT.machines.find(m=>m.name===$('#mm').value);
+  const type=()=>segVal(null,'mtype');
+  const sync=()=>{const m=mach(),t=type();
+    $('#muF').hidden=!m||m.units<2;
+    if(m){const cur=$('#mu').value||pre.unit||1;$('#mu').innerHTML=Array.from({length:m.units},(_,i)=>`<option${i+1==cur?' selected':''}>${i+1}</option>`).join('');}
+    const tasks=m?MT.tasks.filter(x=>x.machine===m.name):[];
+    $('#mpmP').hidden=!(m&&t==='PM ตามแผน');
+    const had=$$('#mpm input:checked').map(x=>x.value).concat(pre.pm||[]);
+    $('#mpm').innerHTML=tasks.length?tasks.map(x=>`<label class="mtck"><input type="checkbox" value="${esc(x.code)}"${had.includes(x.code)?' checked':''}><span>${esc(x.task)} <span class="opt">(${mtFreq(x.freq)})</span></span></label>`).join(''):'<div class="empty">เครื่องนี้ยังไม่มีแผน PM ในชีต</div>';
+    const ck=m&&t&&t!=='ทำความสะอาด'?(MT.checks[m.name]||[]):[];
+    $('#mckP').hidden=!ck.length;
+    if($('#mck').dataset.m!==(m?m.name:'')+'|'+ck.length){$('#mck').dataset.m=(m?m.name:'')+'|'+ck.length;
+      $('#mck').innerHTML=ck.map((c,i)=>c.type==='num'?`<div class="field"><label for="ck${i}">${esc(c.label)}${c.unit?' <span class="opt">('+esc(c.unit)+')</span>':''}</label><input id="ck${i}" class="num ckv" data-l="${esc(c.label)}" type="number" inputmode="decimal" min="0" step="0.01"></div>`
+        :`<div class="field ckpf" data-l="${esc(c.label)}"><span class="lbl">${esc(c.label)}</span>${seg('ck'+i,['ผ่าน','ไม่ผ่าน'],'')}</div>`).join('');}
+    $('#mpO').textContent=t==='ซ่อมเมื่อเสีย'?'':'(ถ้ามี)';
+  };
+  $('#mm').onchange=()=>{pre.pm=[];$$('#mpm input').forEach(x=>x.checked=false);sync();};
+  $('[data-seg="mtype"]').addEventListener('segchange',sync);
+  sync(); pre.pm=[]; window.scrollTo(0,0);
+  $('#mf').onsubmit=e=>{e.preventDefault();
+    const m=mach(),t=type(),errs=[],checks={};
+    if(!m)errs.push('เลือกเครื่องจักร');if(!t)errs.push('เลือกประเภทงาน');
+    const pm=$('#mpmP').hidden?[]:$$('#mpm input:checked').map(x=>x.value);
+    if(m&&t==='PM ตามแผน'&&!pm.length)errs.push('เลือกงาน PM ที่ทำอย่างน้อย 1 งาน');
+    if(t==='ซ่อมเมื่อเสีย'&&!val(null,'#mp'))errs.push('กรอกปัญหา / อาการ');
+    if(!val(null,'#ma'))errs.push('กรอกสิ่งที่ทำ / การแก้ไข');
+    const dn=val(null,'#mdn');if(dn!==''&&!(Number(dn)>=0))errs.push('นาทีที่หยุดเครื่องไม่ถูกต้อง');
+    if(t==='ซ่อมเมื่อเสีย'&&dn==='')errs.push('กรอกนาทีที่หยุดเครื่อง (ไม่หยุด ใส่ 0)');
+    const st=segVal(null,'mst');let fail=false;
+    if(!$('#mckP').hidden){$$('#mck .ckv').forEach(x=>{if(x.value.trim()==='')errs.push('รายการตรวจบังคับ: '+x.dataset.l);else checks[x.dataset.l]=x.value.trim();});
+      $$('#mck .ckpf').forEach(f=>{const b=f.querySelector('[aria-pressed="true"]');if(!b)errs.push('รายการตรวจบังคับ: '+f.dataset.l);else{checks[f.dataset.l]=b.dataset.v;if(b.dataset.v==='ไม่ผ่าน')fail=true;}});}
+    if(fail&&st!=='รอติดตาม')errs.push('มีรายการตรวจที่ไม่ผ่าน ให้เลือกสถานะ "รอติดตาม"');
+    const er=$('#merr');
+    if(errs.length){er.innerHTML=errs.map(esc).join('<br>');er.hidden=false;er.scrollIntoView({behavior:'smooth',block:'center'});return;}
+    er.hidden=true;const btn=$('#msave');btn.disabled=true;btn.textContent='กำลังบันทึก…';
+    run('mtSave',{factory:MT.fac,date:val(null,'#md'),time:val(null,'#mtm'),machine:m.name,unit:m.units>1?Number($('#mu').value):1,type:t,pm:pm,problem:val(null,'#mp'),action:val(null,'#ma'),parts:val(null,'#mpt'),down:dn,who:val(null,'#mw'),status:st,checks:checks})
+      .then(d=>{MT=d;mtFac=d.fac;toast('บันทึกแล้ว ✓');if(st==='รอติดตาม')mtView='open';fMaint();})
+      .catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);btn.disabled=false;btn.textContent='บันทึก';});
+  };
 }
 
 /* ---------- review + submit ---------- */
