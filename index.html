@@ -412,15 +412,23 @@ const TITLES=Object.fromEntries(TILES.map(t=>[t[0],t[1]]));
 function shell(kind,body,extraTop){
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${TITLES[kind]}</h2></div>
   <form id="f" novalidate><section class="panel">
-    <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"></div>
+    <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"><div class="hint" id="dateTh"></div></div>
     <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',['J&N','สุภาภรณ์'],factory)}</div></div>${extraTop||''}
   </section>${body}<div class="err" id="err" hidden></div><button type="submit" class="primary">ตรวจสอบและบันทึก</button></form>`;
   $('#back').onclick=home;
+  $('#date').addEventListener('input',dateHint);$('#date').addEventListener('change',dateHint);dateHint();
   $('[data-seg="factory"]').addEventListener('segchange',e=>{factory=e.detail;refreshLocs();});
   $('#f').onsubmit=e=>{e.preventDefault();review(kind);};
   window.scrollTo(0,0);
 }
 let refreshLocs=()=>{};
+/* date safeguard: show the chosen date in Thai words; block dates that look like a day/month mix-up */
+const DATE_MAX_BACK=31;
+function dateBack(){const v=val(null,'#date');if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;return Math.round((new Date(B.today+'T00:00')-new Date(v+'T00:00'))/864e5);}
+function dateHint(){const el=$('#dateTh');if(!el)return;const n=dateBack();
+  if(n==null){el.textContent='กรุณาเลือกวันที่';el.className='hint warn';return;}
+  const t=new Date(val(null,'#date')+'T00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  el.textContent=t+(n===0?' (วันนี้)':n>0?' • ย้อนหลัง '+n+' วัน':' • วันที่ในอนาคต');el.className='hint'+(n>7||n<0?' warn':'');}
 function addLine(container,html,label){
   const box=$(container); const d=document.createElement('div'); d.className='item';
   d.innerHTML=`<div class="item-head"><b>${label} ${box.children.length+1}</b>${box.children.length?'<button type="button" class="rm">ลบ</button>':''}</div>`+html;
@@ -669,23 +677,21 @@ function fCount(){
 }
 
 /* ---------- ซ่อมบำรุงเครื่องจักร (loads its data only when this tab is opened) ---------- */
-const MT_TEST=true; // true = show the "ทดสอบ" chip (trial period)
+const MT_TEST=false; // true = show the "ทดสอบ" chip (trial period)
 const mtCan=()=>!!B.mt; // server decides: ผู้ดูแล + trial list, or everyone after the trial
-let MT=null, mtFac=null, mtView='pm', mtHistM='';
+let MT=null, mtFac='J&N', // J&N only: สุภาภรณ์ is the OEM partner and keeps its own maintenance
+   mtView='pm', mtHistM='';
 const mtFreq=f=>({1:'ทุกวัน',7:'ทุกสัปดาห์',30:'ทุกเดือน',180:'ทุก 6 เดือน',365:'ทุกปี'})[f]||'ทุก '+f+' วัน';
 const mtD=s=>s?dshort(s):'–';
 const mtName=x=>esc(x.machine)+(x.units>1||x.unit>1?' <span class="opt">เครื่องที่ '+x.unit+'</span>':'');
 const mtMin=v=>{v=Number(v)||0;return v>=60?fmt(Math.floor(v/60))+' ชม. '+(v%60?v%60+' นาที':''):v+' นาที';};
 function fMaint(){
-  if(!mtFac)mtFac=factory;
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ซ่อมบำรุงเครื่องจักร</h2>${MT_TEST?'<span class="chip">ทดสอบ</span>':''}</div>
-  <section class="panel"><div class="field"><span class="lbl">โรงงาน</span>${seg('mfac',['J&N','สุภาภรณ์'],mtFac)}</div>
-  <div class="kpis" id="mtSum"></div>
+  <section class="panel"><div class="kpis" id="mtSum"></div>
   <button type="button" class="primary" id="mtNew">+ บันทึกงานซ่อมบำรุง</button>
   <div class="field"><span class="lbl">ดูข้อมูล</span>${seg('mview',[['pm','แผน PM'],['open','งานค้าง'],['hist','ประวัติ'],['down','เวลาหยุดเครื่อง']],mtView)}</div></section>
   <div id="mt" class="mtbody"></div>`;
   $('#back').onclick=home;
-  $('[data-seg="mfac"]').addEventListener('segchange',e=>{mtFac=e.detail;MT=null;mtHistM='';mtLoad();});
   $('[data-seg="mview"]').addEventListener('segchange',e=>{mtView=e.detail;mtDraw();});
   $('#mtNew').onclick=()=>{if(MT)mtForm({});};
   window.scrollTo(0,0);
@@ -745,14 +751,13 @@ function mtDown(){
   $('#mt').innerHTML=`<section class="panel"><h3>เวลาหยุดเครื่องรายเดือน (นาที)</h3>${rows.length?`<div class="tbl"><table><thead><tr><th>เครื่องจักร</th>${M.map(k=>`<th>${ml(k)}</th>`).join('')}<th>รวม</th></tr></thead><tbody>
   ${rows.map(r=>`<tr><td>${esc(r.machine)}</td>${r.m.map(v=>`<td class="num">${v?fmt(v):'–'}</td>`).join('')}<td class="num"><b>${fmt(r.t)}</b></td></tr>`).join('')}
   <tr><td><b>รวมทุกเครื่อง</b></td>${tot.map(v=>`<td class="num"><b>${v?fmt(v):'–'}</b></td>`).join('')}<td class="num"><b>${fmt(tot.reduce((a,b)=>a+b,0))}</b></td></tr></tbody></table></div>
-  <p class="hint">6 เดือนล่าสุด • โรงงาน ${esc(MT.fac)} • เรียงจากเครื่องที่หยุดมากที่สุดในเดือนนี้ • นับทุกประเภทงานที่กรอกนาทีหยุดเครื่อง</p>`:'<div class="empty">ยังไม่มีการหยุดเครื่องใน 6 เดือนนี้</div>'}</section>`;
+  <p class="hint">6 เดือนล่าสุด • เรียงจากเครื่องที่หยุดมากที่สุดในเดือนนี้ • นับทุกประเภทงานที่กรอกนาทีหยุดเครื่อง</p>`:'<div class="empty">ยังไม่มีการหยุดเครื่องใน 6 เดือนนี้</div>'}</section>`;
 }
 /* แบบฟอร์มบันทึกงาน */
 function mtForm(pre){
   const now=new Date(), hm=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>บันทึกงานซ่อมบำรุง</h2></div>
-  <form id="mf" novalidate><section class="panel"><div class="hint">โรงงาน <b>${esc(MT.fac)}</b></div>
-  <div class="grid2 keep"><div class="field"><label for="md">วันที่</label><input type="date" id="md" value="${MT.today}" max="${MT.today}"></div>
+  <form id="mf" novalidate><section class="panel"><div class="grid2 keep"><div class="field"><label for="md">วันที่</label><input type="date" id="md" value="${MT.today}" max="${MT.today}"></div>
   <div class="field"><label for="mtm">เวลา</label><input type="time" id="mtm" value="${hm}"></div></div>
   <div class="field"><label for="mm">เครื่องจักร</label><select id="mm"><option value="">เลือกเครื่องจักร</option>${MT.machines.map(m=>`<option${m.name===pre.machine?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
   <div class="field" id="muF" hidden><label for="mu">เครื่องที่</label><select id="mu"></select></div>
@@ -812,9 +817,13 @@ function mtForm(pre){
 let current=null;
 function review(kind){
   const r=pending(); const e=$('#err');
+  const back=dateBack();
+  if(back==null)r.errs.unshift('เลือกวันที่');
+  else if(back<0)r.errs.unshift('วันที่เป็นวันในอนาคต ตรวจสอบวันที่อีกครั้ง');
+  else if(back>DATE_MAX_BACK&&!B.isAdmin)r.errs.unshift('วันที่ย้อนหลัง '+back+' วัน (เกิน '+DATE_MAX_BACK+' วัน) — ตรวจสอบว่าวัน/เดือนไม่สลับกัน ถ้าต้องบันทึกย้อนหลังจริง ให้แจ้งออฟฟิศ');
   if(r.errs.length){e.innerHTML=r.errs.map(esc).join('<br>');e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'});return;}
   e.hidden=true; r.payload.date=val(null,'#date'); r.payload.factory=factory; current={kind,payload:r.payload};
-  $('#ovHead').textContent=new Date(r.payload.date+'T00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})+' • '+factory+' • '+r.head;
+  $('#ovHead').textContent=new Date(r.payload.date+'T00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})+' • '+factory+' • '+r.head+(back>0?' • ⚠ ย้อนหลัง '+back+' วัน':'');
   $('#ovList').innerHTML=r.sum.map(s=>`<div class="sum-row"><div><b>${esc(s[0])}</b><small>${esc(s[1])}</small></div><b class="num">${esc(s[2])}</b></div>`).join('');
   $('#ov').hidden=false; $('#ovOk').disabled=false; $('#ovOk').focus();
 }
