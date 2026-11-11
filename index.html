@@ -6,6 +6,7 @@
 <title>J&amp;N ระบบงานโรงงาน</title>
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#D8392F">
+<script>(function(){var u=navigator.userAgent||"";if(/\bLine\//i.test(u)&&!/openExternalBrowser=1/.test(location.search)){location.replace(location.origin+location.pathname+"?openExternalBrowser=1");}})();</script>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -171,7 +172,7 @@ main>*,section.panel>*,.kpis>*{min-width:0}
 </head>
 <body>
 <div id="boot" class="center"><div><img data-logo src="" alt="J&amp;N International Co., Ltd."><div class="spinner"></div><p class="hint">กำลังโหลด…</p></div></div>
-<div id="auth" class="center" hidden><div><img data-logo src="" alt="J&amp;N International Co., Ltd."><h2>เข้าสู่ระบบ</h2><p class="hint">ใช้บัญชี Google (Gmail) ที่ออฟฟิศลงทะเบียนไว้</p><div id="gbtn" style="display:flex;justify-content:center;margin:14px 0"></div><p class="hint">ครั้งต่อไประบบจะเข้าให้อัตโนมัติ</p></div></div>
+<div id="auth" class="center" hidden><div><img data-logo src="" alt="J&amp;N International Co., Ltd."><h2>เข้าสู่ระบบ</h2><p class="hint">ใช้บัญชี Google (Gmail) ที่ออฟฟิศลงทะเบียนไว้</p><div id="gbtn" style="display:flex;justify-content:center;margin:14px 0"></div><p class="hint">ครั้งต่อไประบบจะเข้าให้อัตโนมัติ</p><p class="warnbox" id="inapp" hidden>เข้าสู่ระบบจากในแอป LINE / Facebook ไม่ได้<br>กดปุ่ม ⋮ หรือปุ่มแชร์ แล้วเลือก <b>เปิดใน Chrome</b> (หรือ Safari)</p></div></div>
 <div id="app" hidden>
   <header class="bar"><div class="wrap bar-in">
     <div class="logo-chip"><img data-logo src="" alt="J&amp;N"></div>
@@ -215,7 +216,7 @@ function signIn(){
   if(tokOk())return Promise.resolve();
   return new Promise(res=>{authWait=res;gisReady().then(()=>{
     if(!gisInit){google.accounts.id.initialize({client_id:CLIENT_ID,callback:onCred,auto_select:true,use_fedcm_for_prompt:true,cancel_on_tap_outside:false});gisInit=true;}
-    $('#boot').hidden=true;$('#auth').hidden=false;
+    $('#boot').hidden=true;$('#auth').hidden=false;if(/\bLine\/|FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent))$('#inapp').hidden=false;
     google.accounts.id.renderButton($('#gbtn'),{theme:'filled_blue',size:'large',text:'signin_with',shape:'pill',locale:'th'});
     google.accounts.id.prompt();
   });});
