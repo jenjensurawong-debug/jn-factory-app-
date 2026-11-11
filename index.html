@@ -184,6 +184,11 @@ main>*,section.panel>*,.kpis>*{min-width:0}
   <h3 id="ovT">ตรวจสอบก่อนบันทึก</h3><div class="hint" id="ovHead"></div><div class="list" id="ovList"></div>
   <div class="btns"><button type="button" class="ghost" id="ovBack">แก้ไข</button><button type="button" class="primary" id="ovOk">ยืนยันบันทึก</button></div>
 </div></div>
+<div class="overlay" id="ovE" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ovET">
+  <h3 id="ovET">แก้ไขรายการที่กรอกผิด</h3><div class="hint" id="ovEHead"></div><div id="ovEBody"></div><div class="err" id="ovEErr" hidden></div>
+  <div class="btns"><button type="button" class="ghost" id="ovECancel">ปิด</button><button type="button" class="primary" id="ovESave">บันทึกการแก้ไข</button></div>
+  <button type="button" class="linkbtn" id="ovEVoid">ยกเลิกรายการนี้ (ตั้งยอดเป็น 0)</button>
+</div></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -395,15 +400,16 @@ function fLabor(){
 /* ---------- ประวัติของฉัน (7 วัน) ---------- */
 function fHist(){
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ประวัติของฉัน (7 วัน)</h2></div>
-  <section class="panel"><p class="hint">รายการที่คุณบันทึกย้อนหลัง 7 วัน • แก้ไขเองไม่ได้ ถ้าพบตัวเลขผิด ให้แจ้งออฟฟิศพร้อมวันที่และรายการ</p></section>
+  <section class="panel"><p class="hint">รายการที่คุณบันทึกย้อนหลัง 7 วัน • กรอกตัวเลขผิดกด <b>แก้ไข</b> ที่รายการนั้นได้เลย ระบบจะแก้ไฟล์หลักให้เองภายใน 5 นาที</p></section>
   <div id="hist"><div class="center" style="min-height:30vh"><div class="spinner"></div></div></div>`;
   $('#back').onclick=home; window.scrollTo(0,0);
   run('getMyHistory').then(list=>{
     if(!list.length){$('#hist').innerHTML='<section class="panel"><div class="empty">ยังไม่มีรายการใน 7 วันนี้</div></section>';return;}
-    const by={};list.forEach(r=>{const k=r.day||r.saved;(by[k]=by[k]||[]).push(r);});
+    histRows=list;list.forEach((r,i)=>r._i=i);const by={};list.forEach(r=>{const k=r.day||r.saved;(by[k]=by[k]||[]).push(r);});
     const dl=k=>{const d=new Date(k+'T00:00');return isNaN(d)?k:d.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});};
     const sl=k=>{const d=new Date(k+'T00:00');return isNaN(d)?k:d.getDate()+'/'+(d.getMonth()+1);};
-    $('#hist').innerHTML=Object.keys(by).sort().reverse().map(k=>`<section class="panel"><h3>${esc(dl(k))} <span class="opt">(${by[k].length} รายการ)</span></h3><div class="list">${by[k].map(r=>`<div class="entry"><span class="t">${esc(r.title)}</span><span class="kg">${fmt(r.qty)} ${esc(r.unit)}</span><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.detail)} • บันทึก ${r.saved!==k?esc(sl(r.saved))+' ':''}${esc(r.time)} น.</span></div></div>`).join('')}</div></section>`).join('');
+    $('#hist').innerHTML=Object.keys(by).sort().reverse().map(k=>`<section class="panel"><h3>${esc(dl(k))} <span class="opt">(${by[k].length} รายการ)</span></h3><div class="list">${by[k].map(r=>`<div class="entry"><span class="t">${esc(r.title)}</span><span class="kg">${fmt(r.qty)} ${esc(r.unit)}</span><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.detail)} • บันทึก ${r.saved!==k?esc(sl(r.saved))+' ':''}${esc(r.time)} น.</span>${r.editable?`<button type="button" class="linkbtn" data-ed="${r._i}">แก้ไข</button>`:''}</div></div>`).join('')}</div></section>`).join('');
+    $$('[data-ed]').forEach(b=>b.onclick=()=>openEdit(histRows[Number(b.dataset.ed)]));
   }).catch(e=>{$('#hist').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
 }
 
@@ -813,6 +819,43 @@ function mtForm(pre){
   };
 }
 
+/* ---------- แก้ไขรายการย้อนหลัง 7 วัน ---------- */
+let histRows=[], editing=null, voidArm=false;
+function openEdit(r){
+  if(!r)return;
+  editing=null; voidArm=false;
+  $('#ovEHead').textContent='กำลังโหลด…'; $('#ovEBody').innerHTML=''; $('#ovEErr').hidden=true;
+  $('#ovEVoid').textContent='ยกเลิกรายการนี้ (ตั้งยอดเป็น 0)'; $('#ovEVoid').hidden=false;
+  $('#ovESave').hidden=false; $('#ovE').hidden=false;
+  run('getEntryForEdit',r.tab,r.id).then(d=>{
+    editing=d;
+    $('#ovEHead').innerHTML=`<b>${esc(d.title)}</b> • ${esc(d.kind)} • ${esc(d.dateText)}${d.detail?'<br>'+esc(d.detail):''}`;
+    $('#ovEBody').innerHTML=d.fields.map(f=>`<div class="field"><label for="ef_${esc(f.k)}">${esc(f.label)}${f.unit?' <span class="opt">('+esc(f.unit)+')</span>':''}</label><input id="ef_${esc(f.k)}" class="num ef" data-k="${esc(f.k)}" type="number" inputmode="decimal" min="0" step="${f.int?'1':'0.01'}" value="${f.v===''||f.v==null?'':esc(f.v)}"></div>`).join('')
+      +(d.children&&d.children.length?'<span class="lbl">ปลาที่ใช้จริง</span>'+d.children.map(c=>`<div class="qrow"><span>${esc(c.item)}</span><input class="num ec" data-id="${esc(c.id)}" type="number" inputmode="decimal" min="0" step="0.01" value="${c.qty===''||c.qty==null?'':esc(c.qty)}"><span class="u">${esc(c.unit||'กก.')}</span></div>`).join(''):'')
+      +`<div class="field"><label for="ef_note">หมายเหตุ</label><textarea id="ef_note">${esc(d.note||'')}</textarea></div>`
+      +'<p class="hint">แก้ได้เฉพาะตัวเลขและหมายเหตุ • ถ้าเลือกรายการ/สินค้า/สถานที่ผิด ให้กดยกเลิกรายการนี้ แล้วบันทึกเข้าใหม่</p>';
+  }).catch(e=>{$('#ovEHead').textContent='';$('#ovESave').hidden=true;$('#ovEVoid').hidden=true;$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;});
+}
+function editVals(){
+  const fields={}; $$('#ovEBody .ef').forEach(x=>fields[x.dataset.k]=x.value.trim());
+  return {fields,children:$$('#ovEBody .ec').map(x=>({id:x.dataset.id,qty:x.value.trim()})),note:val(null,'#ef_note')};
+}
+function sendEdit(voidIt){
+  if(!editing)return;
+  const btn=voidIt?$('#ovEVoid'):$('#ovESave'), t=btn.textContent;
+  btn.disabled=true; btn.textContent='กำลังบันทึก…'; $('#ovEErr').hidden=true;
+  run('updateEntry',editing.tab,editing.id,editVals(),!!voidIt).then(res=>{
+    $('#ovE').hidden=true; B.recent=res.recent||B.recent;
+    toast(voidIt?'ยกเลิกรายการแล้ว ✓':'แก้ไขแล้ว ✓'); fHist();
+  }).catch(e=>{$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;})
+   .finally(()=>{btn.disabled=false;btn.textContent=t;});
+}
+$('#ovECancel').onclick=()=>$('#ovE').hidden=true;
+$('#ovESave').onclick=()=>sendEdit(false);
+$('#ovEVoid').onclick=()=>{
+  if(!voidArm){voidArm=true;$('#ovEVoid').textContent='กดอีกครั้งเพื่อยืนยันยกเลิกรายการนี้';return;}
+  voidArm=false; sendEdit(true);
+};
 /* ---------- review + submit ---------- */
 let current=null;
 function review(kind){
