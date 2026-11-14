@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>J&amp;N ระบบงานโรงงาน</title>
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#D8392F">
+<script>(function(){var u=navigator.userAgent||"";if(/\bLine\//i.test(u)&&!/openExternalBrowser=1/.test(location.search)){location.replace(location.origin+location.pathname+"?openExternalBrowser=1");}})();</script>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: phone-first single column; red brand band on top, white working surface. Tokens below. */
+:root{
+  --red:#D8392F; --red-deep:#B32A22; --red-tint:#FCEBEA;
+  --slate:#3B4750; --bg:#F7F5F4; --surface:#FFFFFF; --line:#E6E1DF;
+  --fg:#22292E; --muted:#6B7378; --on-red:#FFFFFF;
+  --ok:#1F7A4D; --ok-tint:#E6F3EC; --warn:#A15C00; --warn-tint:#FFF3DE;
+  --f-display:"Prompt","IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans Thai",system-ui,sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){:root{
+  --red:#E5554B; --red-deep:#C9433A; --red-tint:#3A1E1C; --slate:#AEB8BF;
+  --bg:#161A1D; --surface:#1F2428; --line:#30373C; --fg:#ECEEEF; --muted:#9AA3A8;
+  --ok:#5CC28E; --ok-tint:#18302A; --warn:#F0B35C; --warn-tint:#352A17; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;min-height:100%}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.55;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid color-mix(in srgb,var(--red) 55%,transparent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.wrap{max-width:640px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+header.bar{position:sticky;top:0;z-index:5;background:var(--red);color:var(--on-red);padding-top:env(safe-area-inset-top,0px)}
+.bar-in{display:flex;align-items:center;gap:12px;padding-block:10px}
+.logo-chip{background:#fff;border-radius:8px;padding:4px 8px;display:flex;flex:none}
+.logo-chip img{height:30px;width:auto;display:block}
+.bar-title{flex:1;min-width:0}
+.bar-title b{display:block;font-family:var(--f-display);font-size:16px;line-height:1.2}
+.bar-title span{font-size:12px;opacity:.85}
+.who{text-align:right;font-size:12px;line-height:1.3}
+.who b{display:block;font-size:14px}
+
+main{padding-block:18px 64px;display:grid;gap:16px}
+.hello h2{font-size:20px}
+.hello p{margin:2px 0 0;color:var(--muted);font-size:14px}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tile{background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:14px;text-align:left;cursor:pointer;display:grid;gap:2px;min-height:86px;align-content:start}
+.tile b{font-family:var(--f-display);font-size:16px;color:var(--red)}
+.tile span{font-size:12.5px;color:var(--muted)}
+.tile:hover{border-color:var(--red)}
+.tile.main{grid-column:1/-1;background:var(--red);border-color:var(--red)}
+.tile.main b,.tile.main span{color:var(--on-red)}
+.admin{display:flex;flex-wrap:wrap;gap:8px}
+.admin a,.admin button{flex:1 1 200px;text-align:center;border:1.5px solid var(--slate);color:var(--slate);background:none;border-radius:10px;padding:10px;text-decoration:none;font-weight:600;cursor:pointer}
+
+section.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:grid;gap:14px}
+.panel h3{font-size:16px}
+.head{display:flex;align-items:center;gap:10px}
+.back{background:none;border:1.5px solid var(--line);border-radius:9px;padding:6px 12px;cursor:pointer}
+.head h2{font-size:19px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:440px){.grid2:not(.keep){grid-template-columns:1fr}}
+.field{display:grid;gap:5px;min-width:0}
+.field label,.lbl{font-size:13px;font-weight:600;color:var(--slate)}
+.opt{font-weight:400;color:var(--muted)}
+input,select,textarea{width:100%;min-height:46px;border:1.5px solid var(--line);border-radius:9px;background:var(--surface);padding:8px 12px}
+input:focus,select:focus,textarea:focus{border-color:var(--red);outline:none}
+textarea{min-height:60px;resize:vertical}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.seg button{flex:1 1 auto;min-height:44px;border:1.5px solid var(--line);background:var(--surface);border-radius:9px;padding:6px 12px;cursor:pointer;font-weight:500}
+.seg button[aria-pressed="true"]{background:var(--red);border-color:var(--red);color:var(--on-red)}
+.item{border:1.5px dashed var(--line);border-radius:10px;padding:12px;display:grid;gap:10px}
+.item-head{display:flex;justify-content:space-between;align-items:center}
+.item-head b{font-family:var(--f-display);font-size:14px;color:var(--red)}
+.rm{background:none;border:0;color:var(--muted);cursor:pointer;font-size:13px;text-decoration:underline}
+.hint{font-size:12.5px;color:var(--muted)}
+.hint.warn,.warnbox{color:var(--warn)}
+.warnbox{background:var(--warn-tint);border-radius:9px;padding:10px 12px;font-size:13.5px}
+.err{font-size:13px;color:var(--red);font-weight:600}
+.add{border:1.5px dashed var(--red);color:var(--red);background:var(--red-tint);border-radius:10px;min-height:46px;font-weight:600;cursor:pointer;width:100%}
+.primary{background:var(--red);color:var(--on-red);border:0;border-radius:10px;min-height:52px;font-family:var(--f-display);font-size:17px;font-weight:600;cursor:pointer;width:100%}
+.primary:disabled{opacity:.6}
+.ghost{background:none;border:1.5px solid var(--line);border-radius:10px;min-height:52px;font-weight:600;cursor:pointer}
+.total{display:flex;justify-content:space-between;align-items:baseline;background:var(--red-tint);border-radius:10px;padding:12px 14px}
+.total b{font-size:19px;color:var(--red)}
+.qrow{display:grid;grid-template-columns:minmax(0,1fr) 120px 56px;gap:8px;align-items:center;padding-block:4px;border-bottom:1px solid var(--line)}
+.qrow:last-child{border-bottom:0}
+.qrow input{min-height:40px;padding:6px 10px}
+.qrow .u{font-size:12px;color:var(--muted)}
+.qrow.fish{grid-template-columns:minmax(0,1fr) 100px 90px}
+.list{display:grid;gap:8px}
+.entry{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px}
+.entry .t{font-weight:600}
+.entry .meta{grid-column:1/-1;font-size:12.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:4px 10px;align-items:center}
+.chip{font-size:11.5px;font-weight:600;border-radius:99px;padding:1px 9px;background:var(--red-tint);color:var(--red)}
+.kg{font-family:var(--f-num);text-align:right}
+.empty{color:var(--muted);font-size:14px;text-align:center;padding:12px}
+
+.overlay{position:fixed;inset:0;background:rgba(10,12,14,.55);z-index:20;display:grid;place-items:end center}
+.sheet{background:var(--surface);width:100%;max-width:640px;border-radius:16px 16px 0 0;padding:20px;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));display:grid;gap:12px;max-height:88vh;overflow:auto}
+@media (min-width:700px){.overlay{place-items:center}.sheet{border-radius:16px}}
+.sum-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:9px 12px;border:1px solid var(--line);border-radius:9px}
+.sum-row small{display:block;color:var(--muted)}
+.btns{display:grid;grid-template-columns:1fr 2fr;gap:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(20px + env(safe-area-inset-bottom,0px));background:var(--ok);color:#fff;padding:12px 18px;border-radius:10px;font-weight:600;z-index:30;box-shadow:0 8px 24px rgba(0,0,0,.25);max-width:calc(100% - 32px)}
+.toast.bad{background:var(--red)}
+.center{min-height:70vh;display:grid;place-items:center;text-align:center;padding:24px}
+.center img{width:140px;margin:0 auto 16px;display:block}
+.spinner{width:28px;height:28px;border:3px solid var(--line);border-top-color:var(--red);border-radius:50%;margin:16px auto;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+.tile.ceo{width:100%;background:var(--slate);border-color:var(--slate)}
+.tile.ceo b,.tile.ceo span{color:#fff}
+@media (prefers-color-scheme: dark){.tile.ceo{background:#2B343A;border-color:#46525A}}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;display:grid;gap:2px;align-content:start;min-width:0}
+.kpi span{font-size:12.5px;color:var(--muted)}
+.kpi b{font-size:20px;font-weight:500;line-height:1.25;overflow-wrap:anywhere}
+.kpi small{font-size:12px;color:var(--muted)}
+.kpi.hero{grid-column:1/-1;border-color:var(--red);border-width:1.5px}
+.kpi.hero b{font-size:30px;color:var(--red)}
+.dl{font-size:12.5px;font-weight:600}.dl.bad{color:var(--red)}.dl.good{color:var(--ok)}
+.bars{display:flex;align-items:flex-end;gap:4px;height:170px;padding-top:4px}
+.bc{flex:1 1 0;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px}
+.bc i{display:block;width:100%;max-width:26px;background:var(--red);border-radius:4px 4px 0 0}
+.bv{font-family:var(--f-num);font-size:9.5px;color:var(--fg);white-space:nowrap;writing-mode:vertical-rl;transform:rotate(180deg)}
+.bl{font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;max-width:100%}
+.stack{display:flex;height:14px;border-radius:7px;overflow:hidden;background:var(--line);gap:2px}
+.stack i{display:block;height:100%}
+.c1{background:#D8392F}.c2{background:#E8913A}.c3{background:#3B4750}.c4{background:#8A9AA4}.c5{background:#2E8C8C}
+@media (prefers-color-scheme: dark){.c3{background:#AEB8BF}.c4{background:#6B7A84}}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.rows{display:grid;gap:2px}
+.rows .r{display:grid;grid-template-columns:minmax(0,1fr) auto 44px;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.rows .r em{font-style:normal;font-size:12.5px;color:var(--muted);text-align:right}
+.rows .r.tot{font-weight:600;border-bottom:0}
+.cg{border:1px solid var(--line);border-radius:10px;padding:2px 10px;margin-bottom:8px}.cg summary{display:flex;justify-content:space-between;align-items:center;min-height:44px;list-style:none}.cg summary::-webkit-details-marker{display:none}.cg summary::before{content:'▸';margin-right:6px;color:var(--muted)}.cg[open] summary::before{content:'▾'}.cg summary>span:first-child{flex:1}.cg[open] summary{border-bottom:1px solid var(--line)}
+.opn{margin-top:6px}
+.rhead{display:flex;align-items:center;justify-content:space-between;gap:8px}.rhead h3{margin:0}.linkbtn{background:none;border:0;color:var(--red);font-weight:600;font-size:14px;cursor:pointer;padding:6px 0}
+.tile.lab{border-color:#8A9AA4}
+details summary{cursor:pointer;color:var(--slate);font-weight:600;font-size:14px;padding:4px 0}
+.tbl{overflow-x:auto}
+.tbl table{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th,.tbl td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:right}
+.tbl th:first-child,.tbl td:first-child{text-align:left}
+.tbl th{font-weight:600;color:var(--muted);font-size:12px}
+.warnp{background:var(--warn-tint);border-color:transparent;color:var(--warn);gap:4px}.warnp p{margin:0;font-size:13.5px}
+#dash{display:grid;gap:16px;min-width:0}
+main>*,section.panel>*,.kpis>*{min-width:0}
+.tbl{max-width:100%}.tbl td:first-child{white-space:normal;word-break:break-word}
+.szgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:8px}.szc{display:grid;gap:4px;font-size:13px;font-weight:600;color:var(--slate)}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}.bxh{font-family:var(--f-display);color:var(--red);font-size:14px}
+.linkbtn{background:none;border:0;color:var(--red);font-weight:600;cursor:pointer;text-decoration:underline;padding:0 4px}
+.who .out{background:none;border:0;color:inherit;opacity:.85;font-size:12px;text-decoration:underline;padding:2px 0;cursor:pointer;display:block;margin-left:auto}
+/* ซ่อมบำรุงเครื่องจักร */
+.tile.mt{border-color:var(--slate)}
+.mtbody{display:grid;gap:16px;min-width:0}
+.chip.over{background:var(--red);color:#fff}.chip.soon{background:var(--warn-tint);color:var(--warn)}.chip.okc{background:var(--ok-tint);color:var(--ok)}
+.entry .linkbtn{padding:0;text-decoration:none;white-space:nowrap}
+.mtd{grid-column:1/-1;font-size:13.5px}.mtd p{margin:2px 0;overflow-wrap:anywhere}
+.mtclose{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:6px}.mtclose .ghost{min-height:46px;padding:0 14px}
+.mtck{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+#mf{display:grid;gap:16px}
+.mtck input{width:22px;height:22px;min-height:22px;flex:none;margin:1px 0 0;padding:0;accent-color:var(--red)}
+</style>
+</head>
+<body>
+<div id="boot" class="center"><div><img data-logo src="" alt="J&amp;N International Co., Ltd."><div class="spinner"></div><p class="hint">กำลังโหลด…</p></div></div>
+<div id="auth" class="center" hidden><div><img data-logo src="" alt="J&amp;N International Co., Ltd."><h2>เข้าสู่ระบบ</h2><p class="hint">ใช้บัญชี Google (Gmail) ที่ออฟฟิศลงทะเบียนไว้</p><div id="gbtn" style="display:flex;justify-content:center;margin:14px 0"></div><p class="hint">ครั้งต่อไประบบจะเข้าให้อัตโนมัติ</p><p class="warnbox" id="inapp" hidden>เข้าสู่ระบบจากในแอป LINE / Facebook ไม่ได้<br>กดปุ่ม ⋮ หรือปุ่มแชร์ แล้วเลือก <b>เปิดใน Chrome</b> (หรือ Safari)</p></div></div>
+<div id="app" hidden>
+  <header class="bar"><div class="wrap bar-in">
+    <div class="logo-chip"><img data-logo src="" alt="J&amp;N"></div>
+    <div class="bar-title"><b>J&amp;N ระบบงานโรงงาน</b><span>J&amp;N International Co., Ltd.</span></div>
+    <div class="who"><b id="who"></b><span id="whoRole"></span><button type="button" class="out" id="outBtn">ออกจากระบบ</button></div>
+  </div></header>
+  <main class="wrap" id="view"></main>
+</div>
+<div class="overlay" id="ov" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ovT">
+  <h3 id="ovT">ตรวจสอบก่อนบันทึก</h3><div class="hint" id="ovHead"></div><div class="list" id="ovList"></div>
+  <div class="btns"><button type="button" class="ghost" id="ovBack">แก้ไข</button><button type="button" class="primary" id="ovOk">ยืนยันบันทึก</button></div>
+</div></div>
+<div class="overlay" id="ovE" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ovET">
+  <h3 id="ovET">แก้ไขรายการที่กรอกผิด</h3><div class="hint" id="ovEHead"></div><div id="ovEBody"></div><div class="err" id="ovEErr" hidden></div>
+  <div class="btns"><button type="button" class="ghost" id="ovECancel">ปิด</button><button type="button" class="primary" id="ovESave">บันทึกการแก้ไข</button></div>
+  <button type="button" class="linkbtn" id="ovEVoid">ยกเลิกรายการนี้ (ตั้งยอดเป็น 0)</button>
+</div></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+const LOGO="data:image/png;base64,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";document.querySelectorAll("[data-logo]").forEach(i=>i.src=LOGO);
+(function(){
+const $=s=>document.querySelector(s), $$=(s,el)=>[...(el||document).querySelectorAll(s)];
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=(n,d)=>Number(n||0).toLocaleString('en-US',{minimumFractionDigits:d||0,maximumFractionDigits:d==null?2:d});
+const LINE='ไลน์ผลิต';
+let B=null, factory='J&N', pending=null;
+
+const API_URL="https://script.google.com/macros/s/AKfycbw2Usx2dlYGnyAS_lyF9s-zzX6v_aZk1qZegvauUZyzAa7FMcHWy1czWG3QTV4-tb3BKg/exec", CLIENT_ID="689781745326-fq78g6d4v36bsli76g66to0520d0h53l.apps.googleusercontent.com";
+/* ---------- Google sign-in (ID token, verified by the server) ---------- */
+const TK='jn_tok';
+let tok=null; try{tok=JSON.parse(localStorage.getItem(TK)||'null');}catch(e){}
+const tokOk=()=>tok&&tok.exp-Date.now()>120e3;
+let authWait=null;
+function jwtExp(t){try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}}
+function onCred(r){tok={t:r.credential,exp:jwtExp(r.credential)};try{localStorage.setItem(TK,JSON.stringify(tok));}catch(e){}
+  $('#auth').hidden=true;if(authWait){const w=authWait;authWait=null;w();}}
+function gisReady(){return new Promise(res=>{const c=()=>window.google&&google.accounts&&google.accounts.id?res():setTimeout(c,50);c();});}
+let gisInit=false;
+function signIn(){
+  if(tokOk())return Promise.resolve();
+  return new Promise(res=>{authWait=res;gisReady().then(()=>{
+    if(!gisInit){google.accounts.id.initialize({client_id:CLIENT_ID,callback:onCred,auto_select:true,use_fedcm_for_prompt:true,cancel_on_tap_outside:false});gisInit=true;}
+    $('#boot').hidden=true;$('#auth').hidden=false;if(/\bLine\/|FBAN|FBAV|FB_IAB|Instagram/i.test(navigator.userAgent))$('#inapp').hidden=false;
+    google.accounts.id.renderButton($('#gbtn'),{theme:'filled_blue',size:'large',text:'signin_with',shape:'pill',locale:'th'});
+    google.accounts.id.prompt();
+  });});
+}
+function signOut(){try{localStorage.removeItem(TK);}catch(e){}tok=null;try{google.accounts.id.disableAutoSelect();}catch(e){}location.reload();}
+async function call(fn,args){
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args,token:tok&&tok.t})});
+  if(!r.ok)throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด ('+r.status+') ลองใหม่อีกครั้ง');
+  return r.json();
+}
+async function run(fn,...args){
+  await signIn();
+  let j;
+  try{j=await call(fn,args);}catch(e){throw new Error(navigator.onLine?(e.message||'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'):'ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง');}
+  if(!j.ok&&j.code==='AUTH'){tok=null;try{localStorage.removeItem(TK);}catch(e){}await signIn();j=await call(fn,args);}
+  if(!j.ok)throw new Error(j.error||'เกิดข้อผิดพลาด');
+  return j.result;
+}
+function toast(t,bad){const el=$('#toast');el.textContent=t;el.className='toast'+(bad?' bad':'');el.hidden=false;clearTimeout(el._t);el._t=setTimeout(()=>el.hidden=true,3500);}
+
+/* ---------- master helpers ---------- */
+const M=()=>B.masters;
+const fishItems=()=>M().items.filter(i=>i.cat==='ปลา');
+const species=()=>[...new Set(fishItems().map(i=>i.name.replace(/ \((ปลาตัว|ปลาตัด)\)$/,'')))];
+const otherItems=()=>M().items.filter(i=>i.cat!=='ปลา');
+const itemBy=n=>M().items.find(i=>i.name===n);
+const locs=t=>M().locations.filter(l=>l.factory===factory&&(!t||l.type===t));
+const storeLoc=()=>(locs('คลัง')[0]||{name:'คลังวัตถุดิบ '+factory}).name;
+const coldLocs=()=>locs('ห้องเย็น').map(l=>l.name);
+function itemOptions(list,blank){
+  const cats=[...new Set(list.map(i=>i.cat))];
+  return (blank?`<option value="">${blank}</option>`:'')+cats.map(c=>`<optgroup label="${esc(c)}">`+list.filter(i=>i.cat===c).map(i=>`<option>${esc(i.name)}</option>`).join('')+'</optgroup>').join('');
+}
+const skuOptions=all=>'<option value="">เลือกสินค้า</option>'+M().skus.filter(s=>all||s.unit!=='ขวด').map(s=>`<option>${esc(s.name)}</option>`).join('');
+function seg(name,opts,val){return `<div class="seg" data-seg="${name}" role="group">`+opts.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;return `<button type="button" data-v="${esc(v)}" aria-pressed="${v===val}">${esc(l)}</button>`;}).join('')+'</div>';}
+const segVal=(el,name)=>{const b=(el||document).querySelector(`[data-seg="${name}"] [aria-pressed="true"]`);return b?b.dataset.v:'';};
+document.addEventListener('click',e=>{const b=e.target.closest('.seg button');if(!b)return;const s=b.parentElement;$$('button',s).forEach(x=>x.setAttribute('aria-pressed',x===b));s.dispatchEvent(new CustomEvent('segchange',{bubbles:true,detail:b.dataset.v}));});
+const val=(el,sel)=>{const x=(el||document).querySelector(sel);return x?x.value.trim():'';};
+const n=v=>v===''?NaN:Number(v);
+function shrink(file){return new Promise((res,rej)=>{const img=new Image();const url=URL.createObjectURL(file);img.onload=()=>{const max=1600;let w=img.width,h=img.height;const s=Math.min(1,max/Math.max(w,h));w=Math.round(w*s);h=Math.round(h*s);const c=document.createElement('canvas');c.width=w;c.height=h;c.getContext('2d').drawImage(img,0,0,w,h);URL.revokeObjectURL(url);res(c.toDataURL('image/jpeg',0.7));};img.onerror=()=>rej(new Error('อ่านรูปไม่ได้ ลองถ่ายใหม่'));img.src=url;});}
+
+/* ---------- boot ---------- */
+$('#outBtn').onclick=signOut;
+run('getBoot').then(b=>{
+  if(!b.ok){
+    $('#boot').innerHTML=`<div><img src="${LOGO}" alt="J&amp;N"><h2>ยังไม่มีสิทธิ์เข้าใช้งาน</h2><p class="hint">บัญชี <b>${esc(b.email||'(ไม่ทราบอีเมล)')}</b> ${b.reason==='noaccess'?'ยังไม่ได้รับสิทธิ์ไฟล์บันทึก กรุณารอ 5 นาทีแล้วเปิดใหม่ หรือแจ้งออฟฟิศ':'ยังไม่อยู่ในรายชื่อผู้ใช้'}<br>กรุณาแจ้งออฟฟิศเพื่อเพิ่มอีเมลนี้${b.detail?'<br><small style="color:#999">'+esc(b.detail)+'</small>':''}</p></div>`;
+    $('#boot').insertAdjacentHTML('beforeend','<p style="text-align:center"><button type="button" class="linkbtn" id="swBtn">เปลี่ยนบัญชี Google</button></p>');$('#swBtn').onclick=signOut;
+    return;
+  }
+  B=b; factory=b.user.factory||'J&N';
+  $('#who').textContent=b.user.name; $('#whoRole').textContent=b.user.role+' • '+factory;
+  $('#boot').hidden=true; $('#app').hidden=false; home();
+}).catch(err=>{$('#boot').innerHTML=`<div><h2>เปิดแอปไม่สำเร็จ</h2><p class="hint">${esc(err&&err.message||err)}</p><p class="hint">ลองรีเฟรชหน้า หรือแจ้งออฟฟิศ</p></div>`;});
+
+/* ---------- CEO dashboard ---------- */
+const baht=v=>v==null||isNaN(v)?'–':'฿'+Number(v).toLocaleString('en-US',{maximumFractionDigits:v<100?2:0,minimumFractionDigits:v<100?2:0});
+const pct=(a,b)=>b?Math.round(a/b*100)+'%':'–';
+const dshort=s=>{const d=new Date(s+'T00:00');return d.toLocaleDateString('th-TH',{day:'numeric',month:'short'});};
+let dashFac='ทั้งหมด';
+function fDash(){
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ภาพรวม CEO</h2></div>
+  <section class="panel"><div class="field"><span class="lbl">โรงงาน</span>${seg('dfac',['ทั้งหมด','J&N','สุภาภรณ์'],dashFac)}</div></section>
+  <div id="dash"><div class="center" style="min-height:30vh"><div class="spinner"></div></div></div>`;
+  $('#back').onclick=home;
+  $('[data-seg="dfac"]').addEventListener('segchange',e=>{dashFac=e.detail;loadDash();});
+  window.scrollTo(0,0); loadDash();
+}
+function loadDash(){
+  $('#dash').innerHTML='<div class="center" style="min-height:30vh"><div class="spinner"></div></div>';
+  run('getDashboard',dashFac).then(renderDash).catch(e=>{$('#dash').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
+}
+function delta(cur,prev){
+  if(cur==null||prev==null||!prev) return '';
+  const p=(cur-prev)/prev*100, up=p>0;
+  return `<span class="dl ${up?'bad':'good'}">${up?'▲':'▼'} ${Math.abs(p).toFixed(1)}% จากสัปดาห์ก่อน</span>`;
+}
+function bars(list,fmtV,label){
+  const max=Math.max(...list.map(x=>x.v||0),0);
+  return `<div class="bars" role="img" aria-label="${esc(label)}">${list.map(x=>`<div class="bc" title="${esc(x.l)}: ${esc(fmtV(x.v))}"><span class="bv">${x.v?esc(fmtV(x.v)):''}</span><i style="height:${max&&x.v?Math.max(4,x.v/max*100):0}%"></i><span class="bl">${esc(x.l)}</span></div>`).join('')}</div>`;
+}
+function renderDash(d){
+  const L=d.last, W=d.week, P=d.prevWeek, M=d.month;
+  const warn=[];
+  if(M.noPrice) warn.push(`มี ${M.noPrice} รายการใช้ผลิตเดือนนี้ที่ยังไม่มีราคา → ต้นทุนอาจต่ำกว่าจริง`);
+  if(M.noLabor) warn.push(`มี ${M.noLabor} วันผลิตเดือนนี้ที่ยังไม่กรอกค่าแรง`);
+  const parts=[['ปลา',M.fish,'c1'],['วัตถุดิบ/ซอส',M.mat,'c2'],['บรรจุภัณฑ์',M.pack,'c3'],['สิ้นเปลือง/พลังงาน',M.other,'c4'],['ค่าแรง+OT',M.labor+M.ot,'c5']];
+  const fgTot=d.fg.reduce((a,x)=>({wl:a.wl+x.waitLabel,wb:a.wb+x.waitBox,r:a.r+x.ready}),{wl:0,wb:0,r:0});
+  $('#dash').innerHTML=`
+  ${warn.length?`<section class="panel warnp">${warn.map(w=>`<p>⚠️ ${esc(w)}</p>`).join('')}</section>`:''}
+  <div class="kpis">
+    <div class="kpi hero"><span>ต้นทุน/ลัง • สัปดาห์นี้</span><b class="num">${baht(W.perCarton)}</b>${delta(W.perCarton,P.perCarton)}<small>${baht(W.perCan)} ต่อกระป๋อง • ${fmt(W.good)} กป</small></div>
+    <div class="kpi"><span>ต้นทุน/ลัง • วันผลิตล่าสุด${d.lastProd?' ('+dshort(d.lastProd)+')':''}</span><b class="num">${L?baht(L.perCarton):'–'}</b><small>${L?fmt(L.good)+' กป • รวม '+baht(L.cost):'ยังไม่มีข้อมูลผลิต'}</small></div>
+    <div class="kpi"><span>ต้นทุน/ลัง • เดือนนี้</span><b class="num">${baht(M.perCarton)}</b><small>รวม ${baht(M.cost)} • ${fmt(M.good/100,1)} ลัง</small></div>
+    <div class="kpi"><span>ปลาคงเหลือ</span><b class="num">${fmt(d.fish.kg,0)} กก.</b><small>มูลค่าประมาณ ${baht(d.fish.value)}</small></div>
+    <div class="kpi"><span>ค่าแรง+OT • เดือนนี้</span><b class="num">${baht(M.labor+M.ot)}</b><small>${pct(M.labor+M.ot,M.cost)} ของต้นทุน • OT ${baht(M.ot)}</small></div>
+    <div class="kpi"><span>ผลิต • สัปดาห์นี้</span><b class="num">${fmt(W.good)} กป</b><small>เสีย ${fmt(W.bad)} (${pct(W.bad,W.good+W.bad)}) • ลงกล่อง ${fmt(W.packed)}</small></div>
+    <div class="kpi"><span>สินค้าพร้อมขาย</span><b class="num">${fmt(fgTot.r)} กป</b><small>รอติดฉลาก ${fmt(fgTot.wl)} • รอลงกล่อง ${fmt(fgTot.wb)}</small></div>
+    <div class="kpi"><span>จ่ายออก • เดือนนี้</span><b class="num">${fmt(d.dispatch.cans)} กป</b><small>เงินรับหน้าร้าน ${baht(d.dispatch.cash)}</small></div>
+  </div>
+
+  <section class="panel"><h3>ต้นทุน/ลัง รายวัน (14 วัน)</h3>${bars(d.daily.map(x=>({l:dshort(x.d),v:x.perCarton})),v=>Math.round(v).toLocaleString(),'ต้นทุนต่อลังรายวัน')}<p class="hint">ลัง = 100 กระป๋อง • วันที่ไม่มีผลิตแสดงว่าง</p></section>
+  <section class="panel"><h3>ต้นทุน/ลัง รายสัปดาห์ (8 สัปดาห์)</h3>${bars(d.weekly.map(x=>({l:dshort(x.d),v:x.perCarton})),v=>Math.round(v).toLocaleString(),'ต้นทุนต่อลังรายสัปดาห์')}<p class="hint">วันที่ = วันจันทร์ต้นสัปดาห์</p></section>
+
+  <section class="panel"><h3>ต้นทุนเดือนนี้แยกหมวด</h3>
+    <div class="stack">${parts.map(p=>M.cost?`<i class="${p[2]}" style="width:${p[1]/M.cost*100}%"></i>`:'').join('')}</div>
+    <div class="rows">${parts.map(p=>`<div class="r"><span><i class="dot ${p[2]}"></i>${p[0]}</span><b class="num">${baht(p[1])}</b><em>${pct(p[1],M.cost)}</em></div>`).join('')}
+    <div class="r tot"><span>รวม</span><b class="num">${baht(M.cost)}</b><em></em></div></div></section>
+
+  <section class="panel"><h3>ปลาคงเหลือ ${fmt(d.fish.kg,0)} กก.</h3>
+    ${d.fish.byLoc.length?`<div class="rows">${d.fish.byLoc.map(x=>`<div class="r"><span>${esc(x.k)}</span><b class="num">${fmt(x.v,1)} กก.</b><em></em></div>`).join('')}</div>
+    <details><summary>แยกตามชนิดปลา (${d.fish.byItem.length})</summary><div class="rows">${d.fish.byItem.map(x=>`<div class="r"><span>${esc(x.k)}</span><b class="num">${fmt(x.v,1)} กก.</b><em></em></div>`).join('')}</div></details>`:'<p class="hint">ยังไม่มีปลาคงเหลือ (เริ่มนับหลังยอดตั้งต้น 31 ต.ค.)</p>'}</section>
+
+  <section class="panel"><h3>วัตถุดิบ / บรรจุภัณฑ์หลัก</h3>
+    ${d.low.length?`<p class="warnbox">ต่ำกว่าจุดสั่งซื้อ: ${d.low.map(x=>esc(x.item)+' ('+fmt(x.bal)+' '+esc(x.unit)+')').join(', ')}</p>`:''}
+    <div class="rows">${d.keyStock.length?d.keyStock.map(x=>`<div class="r"><span>${esc(x.item)} <small class="hint">${esc(x.loc)}</small></span><b class="num">${fmt(x.bal)} ${esc(x.unit)}</b><em></em></div>`).join(''):'<p class="hint">ยังไม่มียอด</p>'}</div></section>
+
+  <section class="panel"><h3>สินค้าสำเร็จรูป (ทุกโรงงาน)</h3><div class="tbl"><table><thead><tr><th>สินค้า</th><th>รอติดฉลาก</th><th>รอลงกล่อง</th><th>พร้อมขาย</th></tr></thead><tbody>
+    ${d.fg.map(x=>`<tr><td>${esc(x.sku)}</td><td class="num">${fmt(x.waitLabel)}</td><td class="num">${fmt(x.waitBox)}</td><td class="num">${fmt(x.ready)}</td></tr>`).join('')}</tbody></table></div><p class="hint">หน่วย: กระป๋อง</p></section>
+
+  <section class="panel"><h3>จ่ายออกเดือนนี้ตามช่องทาง</h3><div class="rows">${d.dispatch.byChannel.length?d.dispatch.byChannel.map(x=>`<div class="r"><span>${esc(x.k)}</span><b class="num">${fmt(x.v)} กป</b><em>${pct(x.v,d.dispatch.cans)}</em></div>`).join(''):'<p class="hint">ยังไม่มีการจ่ายออก</p>'}</div></section>
+
+  <p class="hint" style="text-align:center">ข้อมูล ณ ${esc(d.asOf)} น. • โรงงาน: ${esc(d.fac)} • ข้อมูลจากแอปเข้าไฟล์หลักทุก 5 นาที <button type="button" class="linkbtn" id="dref">รีเฟรช</button></p>`;
+  $('#dref').onclick=loadDash;
+}
+
+/* ---------- home ---------- */
+const TILES=[
+  ['receive','รับเข้า','ปลาสด วัตถุดิบ บรรจุภัณฑ์','main'],
+  ['move','เบิกเข้าไลน์ / คืน','ย้ายจากห้องเย็น/คลัง ↔ ไลน์ผลิต'],
+  ['produce','ผลิต','กระป๋องดี/เสีย และปลาที่ใช้'],
+  ['use','ใช้จริงสิ้นวัน','ซอส กระป๋อง ฝา และอื่นๆ'],
+  ['label','ติดฉลาก','ติดฉลากดี บุบ ฉลากเสีย'],
+  ['box','ลงกล่อง','กล่องดีตามขนาด'],
+  ['dispatch','จ่ายออก','ส่งของ ช่องทางขาย ลูกค้า'],
+  ['count','ตรวจนับสต๊อก','ยอดนับจริง ห้องเย็น/คลัง'],
+  ['labor','ค่าแรง / OT','ยอดรวมค่าแรงและ OT รายวัน','lab'],
+  ['maint','ซ่อมบำรุงเครื่องจักร','บันทึกงานซ่อม แผน PM เวลาหยุดเครื่อง','mt']
+];
+function home(){
+  const d=new Date(B.today+'T00:00');
+  $('#view').innerHTML=`<div class="hello"><h2>สวัสดีค่ะ คุณ${esc(B.user.name)}</h2><p>${d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} • โรงงาน ${esc(factory)}</p></div>
+  ${B.isCeo?'<button type="button" class="tile ceo" id="ceoBtn"><b>ภาพรวม CEO</b><span>ต้นทุน/ลัง สต๊อกปลา ค่าแรง ยอดผลิต</span></button>':''}<div class="tiles">${TILES.filter(t=>(t[0]!=='labor'||B.isLabor)&&(t[0]!=='maint'||mtCan())).map(t=>`<button type="button" class="tile ${t[3]||''}" data-go="${t[0]}"><b>${t[1]}</b><span>${t[2]}</span></button>`).join('')}</div>
+  ${B.isAdmin?`<div class="admin"><a href="${esc(B.mainUrl)}" target="_blank" rel="noopener">เปิดไฟล์หลัก (ราคา ค่าแรง ต้นทุน)</a><button type="button" id="syncBtn">ซิงก์ข้อมูลเข้าไฟล์หลักตอนนี้</button></div>`:''}
+  <section class="panel"><div class="rhead"><h3>บันทึกของฉันวันนี้</h3><button type="button" class="linkbtn" id="histBtn">ดูย้อนหลัง 7 วัน →</button></div><div class="list" id="recent"></div></section>`;
+  $('#histBtn').onclick=fHist;
+  $$('[data-go]').forEach(b=>b.onclick=()=>openForm(b.dataset.go));
+  if(B.isCeo) $('#ceoBtn').onclick=fDash;
+  if(B.isAdmin) $('#syncBtn').onclick=()=>{$('#syncBtn').disabled=true;run('syncNow').then(c=>toast('ซิงก์แล้ว '+c+' แถว')).catch(e=>toast(e.message||e,true)).finally(()=>$('#syncBtn').disabled=false);};
+  renderRecent(); window.scrollTo(0,0);
+}
+function renderRecent(){
+  const el=$('#recent'); if(!el)return;
+  el.innerHTML=B.recent.length?B.recent.map(r=>`<div class="entry"><span class="t">${esc(r.title)}</span><span class="kg">${fmt(r.qty)} ${esc(r.unit)}</span><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.detail)} • ${esc(r.time)} น.</span></div></div>`).join(''):'<div class="empty">ยังไม่มีรายการวันนี้</div>';
+}
+
+/* ---------- ค่าแรง / OT (เฉพาะผู้มีสิทธิ์) ---------- */
+function fLabor(){
+  shell('labor',`<section class="panel" id="labP"></section>`);
+  const money=(id,lab)=>`<div class="field"><label for="${id}">${lab}</label><input id="${id}" class="num lab" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0"></div>`;
+  const noteF=`<div class="field"><label for="note">หมายเหตุ <span class="opt">(เช่น จำนวนคน ชม. OT)</span></label><textarea id="note"></textarea></div>`;
+  const sp=()=>factory==='สุภาภรณ์';
+  const tally=()=>{const t=$('#tVal');if(!t)return;let s=0;$$('#labP .lab').forEach(x=>s+=n(x.value)||0);t.textContent='฿'+fmt(s,2);};
+  const load=()=>{const m=$('#labMsg');if(!m)return;m.textContent='กำลังโหลด…';
+    run('getLaborDay',val(null,'#date'),factory).then(d=>{if(!$('#labMsg'))return;
+      if(!d){m.textContent='ยังไม่มีข้อมูลของวันนี้';return;}
+      ['wP','otP','wK','otK','ice'].forEach(k=>{const x=$('#'+k);if(x)x.value=(d[k]===''||d[k]==null)?'':d[k];});if($('#note'))$('#note').value=d.note||'';
+      m.innerHTML=`มีข้อมูลแล้ว (บันทึกโดย ${esc(d.by||'')} ${esc(d.at||'')}) • <b>บันทึกใหม่จะแทนที่ของเดิม</b>`;tally();
+    }).catch(e=>{if($('#labMsg'))$('#labMsg').textContent=e.message||e;});};
+  const draw=()=>{
+    $('#labP').innerHTML=(sp()?`<h3>สุภาภรณ์ (โรงงาน OEM)</h3><div class="hint">ค่าผลิตต่อลัง ระบบคิดอัตโนมัติจากยอดผลิต • ช่องนี้กรอกเฉพาะ<b>ยอดบิลค่าน้ำแข็ง</b> (ถ้ามี)</div>${money('ice','ค่าน้ำแข็ง (ยอดบิล บาท)')}`
+      :`<h3>ค่าแรงรวมของวัน (บาท)</h3><div class="hint">ใส่<b>ยอดรวมทั้งวัน</b> ไม่ต้องแยกรายคน • ไม่มี OT เว้นว่างหรือใส่ 0</div><div class="grid2">${money('wP','ค่าแรงฝ่ายผลิต')}${money('otP','OT ฝ่ายผลิต')}</div><div class="grid2">${money('wK','ค่าแรงฝ่ายแพ็ก')}${money('otK','OT ฝ่ายแพ็ก')}</div>`)
+      +noteF+`<div class="total"><span>รวม</span><b class="num" id="tVal">฿0</b></div><p class="hint" id="labMsg"></p>`;
+    $('#labP').addEventListener('input',tally);tally();load();};
+  refreshLocs=draw;$('#date').addEventListener('change',load);draw();
+  pending=()=>{const errs=[],sum=[],ks=sp()?[['ice','ค่าน้ำแข็ง (ยอดบิล)']]:[['wP','ค่าแรงฝ่ายผลิต'],['otP','OT ฝ่ายผลิต'],['wK','ค่าแรงฝ่ายแพ็ก'],['otK','OT ฝ่ายแพ็ก']];const p={note:val(null,'#note')};let any=false,tot=0;
+    ks.forEach(([k,l])=>{const v=val(null,'#'+k);if(v==='')return;const q=Number(v);if(!(q>=0)){errs.push(l+': ตัวเลขไม่ถูกต้อง');return;}any=true;p[k]=q;tot+=q;sum.push([l,'',fmt(q,2)+' บาท']);});
+    if(!any&&!errs.length)errs.push('กรอกอย่างน้อย 1 ช่อง');
+    sum.push(['รวม','',fmt(tot,2)+' บาท']);
+    return {errs,sum,head:'ค่าแรง / OT',payload:p};};
+}
+
+/* ---------- ประวัติของฉัน (7 วัน) ---------- */
+function fHist(){
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ประวัติของฉัน (7 วัน)</h2></div>
+  <section class="panel"><p class="hint">รายการที่คุณบันทึกย้อนหลัง 7 วัน • กรอกตัวเลขผิดกด <b>แก้ไข</b> ที่รายการนั้นได้เลย ระบบจะแก้ไฟล์หลักให้เองภายใน 5 นาที</p></section>
+  <div id="hist"><div class="center" style="min-height:30vh"><div class="spinner"></div></div></div>`;
+  $('#back').onclick=home; window.scrollTo(0,0);
+  run('getMyHistory').then(list=>{
+    if(!list.length){$('#hist').innerHTML='<section class="panel"><div class="empty">ยังไม่มีรายการใน 7 วันนี้</div></section>';return;}
+    histRows=list;list.forEach((r,i)=>r._i=i);const by={};list.forEach(r=>{const k=r.day||r.saved;(by[k]=by[k]||[]).push(r);});
+    const dl=k=>{const d=new Date(k+'T00:00');return isNaN(d)?k:d.toLocaleDateString('th-TH',{weekday:'short',day:'numeric',month:'short'});};
+    const sl=k=>{const d=new Date(k+'T00:00');return isNaN(d)?k:d.getDate()+'/'+(d.getMonth()+1);};
+    $('#hist').innerHTML=Object.keys(by).sort().reverse().map(k=>`<section class="panel"><h3>${esc(dl(k))} <span class="opt">(${by[k].length} รายการ)</span></h3><div class="list">${by[k].map(r=>`<div class="entry"><span class="t">${esc(r.title)}</span><span class="kg">${fmt(r.qty)} ${esc(r.unit)}</span><div class="meta"><span class="chip">${esc(r.kind)}</span><span>${esc(r.detail)} • บันทึก ${r.saved!==k?esc(sl(r.saved))+' ':''}${esc(r.time)} น.</span>${r.editable?`<button type="button" class="linkbtn" data-ed="${r._i}">แก้ไข</button>`:''}</div></div>`).join('')}</div></section>`).join('');
+    $$('[data-ed]').forEach(b=>b.onclick=()=>openEdit(histRows[Number(b.dataset.ed)]));
+  }).catch(e=>{$('#hist').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
+}
+
+/* ---------- form shell ---------- */
+const TITLES=Object.fromEntries(TILES.map(t=>[t[0],t[1]]));
+function shell(kind,body,extraTop){
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${TITLES[kind]}</h2></div>
+  <form id="f" novalidate><section class="panel">
+    <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"><div class="hint" id="dateTh"></div></div>
+    <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',['J&N','สุภาภรณ์'],factory)}</div></div>${extraTop||''}
+  </section>${body}<div class="err" id="err" hidden></div><button type="submit" class="primary">ตรวจสอบและบันทึก</button></form>`;
+  $('#back').onclick=home;
+  $('#date').addEventListener('input',dateHint);$('#date').addEventListener('change',dateHint);dateHint();
+  $('[data-seg="factory"]').addEventListener('segchange',e=>{factory=e.detail;refreshLocs();});
+  $('#f').onsubmit=e=>{e.preventDefault();review(kind);};
+  window.scrollTo(0,0);
+}
+let refreshLocs=()=>{};
+/* date safeguard: show the chosen date in Thai words; block dates that look like a day/month mix-up */
+const DATE_MAX_BACK=31;
+function dateBack(){const v=val(null,'#date');if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;return Math.round((new Date(B.today+'T00:00')-new Date(v+'T00:00'))/864e5);}
+function dateHint(){const el=$('#dateTh');if(!el)return;const n=dateBack();
+  if(n==null){el.textContent='กรุณาเลือกวันที่';el.className='hint warn';return;}
+  const t=new Date(val(null,'#date')+'T00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  el.textContent=t+(n===0?' (วันนี้)':n>0?' • ย้อนหลัง '+n+' วัน':' • วันที่ในอนาคต');el.className='hint'+(n>7||n<0?' warn':'');}
+function addLine(container,html,label){
+  const box=$(container); const d=document.createElement('div'); d.className='item';
+  d.innerHTML=`<div class="item-head"><b>${label} ${box.children.length+1}</b>${box.children.length?'<button type="button" class="rm">ลบ</button>':''}</div>`+html;
+  const rm=d.querySelector('.rm'); if(rm) rm.onclick=()=>{d.remove();$$('.item-head b',box).forEach((b,i)=>b.textContent=label+' '+(i+1));};
+  box.appendChild(d); return d;
+}
+function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint})[k]();}
+
+/* ---------- รับเข้า ---------- */
+function fReceive(){
+  let photoData='';
+  factory=factory==='สุภาภรณ์'?'สุภาภรณ์':'J&N';
+  shell('receive',`<section class="panel"><div class="field"><span class="lbl">ต้นทาง (ของมาจากไหน)</span>${seg('src',[['ผู้ขาย','ผู้ขาย (Supplier)'],['สุภาภรณ์','สุภาภรณ์'],['อื่นๆ','อื่นๆ']],'ผู้ขาย')}</div>
+    <div class="field" id="srcOF" hidden><label for="srcO">ระบุต้นทาง</label><input id="srcO" maxlength="60" placeholder="เช่น ชื่อร้าน / สถานที่"></div>
+    <div class="field"><span class="lbl">ปลายทาง (ของเข้าที่ไหน)</span>${seg('dst',[['J&N','คลัง J&N'],['สุภาภรณ์','สุภาภรณ์'],['อื่นๆ','อื่นๆ']],factory)}</div>
+    <div class="field" id="dstOF" hidden><label for="dstO">ระบุปลายทาง <span class="opt">(นับเป็นสต๊อก J&amp;N)</span></label><input id="dstO" maxlength="60" placeholder="เช่น ชื่อสถานที่"></div>
+    <div class="hint" id="sdHint"></div>
+    <div class="field"><span class="lbl">รับอะไร</span>${seg('mode',[['fish','ปลาสด'],['mat','วัตถุดิบ / บรรจุภัณฑ์ / อื่นๆ'],['fg','สินค้าสำเร็จรูป (ปลากระป๋อง)']],'fish')}</div>
+    <div class="grid2"><div class="field" id="supF"><label for="sup">ผู้ขาย</label><select id="sup"></select></div>
+    <div class="field"><label for="doc">เลขที่เอกสาร / ใบชั่ง <span class="opt">(ถ้ามี)</span></label><input id="doc"></div></div>
+    <div class="field"><label for="photo">รูปใบส่งของ <span class="opt">(ถ้ามี)</span></label><input id="photo" type="file" accept="image/*" capture="environment"><img id="photoPrev" alt="รูปใบส่งของ" hidden style="max-height:140px;border-radius:8px;border:1px solid var(--line);justify-self:start"></div></section>
+    <section class="panel"><h3>รายการ</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการ (ต้นทางเดียวกัน)</button>
+    <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
+    <div class="total"><span id="tSub">รวม</span><b class="num" id="tVal">0</b></div></section>`);
+  const mode=()=>segVal(null,'mode');
+  const srcV=()=>segVal(null,'src'), dstV=()=>segVal(null,'dst'), xfer=()=>srcV()==='สุภาภรณ์';
+  const SP='สุภาภรณ์', spLocs=t=>M().locations.filter(l=>l.factory===SP&&l.type===t).map(l=>l.name);
+  const fromFish=()=>seg('from',[...spLocs('ห้องเย็น'),[LINE,'ไลน์ผลิต สุภาภรณ์']],spLocs('ห้องเย็น')[0]||LINE);
+  const fgBtn=()=>$('[data-seg="mode"] [data-v="fg"]');
+  const sdSync=()=>{
+    $('[data-seg="factory"]').closest('.field').hidden=true;
+    const sv=srcV(),dv=dstV();
+    $('#srcOF').hidden=sv!=='อื่นๆ';$('#dstOF').hidden=dv!=='อื่นๆ';$('#supF').hidden=sv!=='ผู้ขาย';
+    fgBtn().hidden=!xfer();
+    if(!xfer()&&mode()==='fg'){$$('[data-seg="mode"] button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='fish'));}
+    const h=$('#sdHint');
+    if(xfer()&&dv===SP){h.textContent='ต้นทางและปลายทางเป็นสุภาภรณ์ทั้งคู่ไม่ได้ — เลือกปลายทางใหม่';h.className='hint warn';}
+    else if(xfer()){h.textContent='ย้ายระหว่างโรงงาน: ระบบตัดสต๊อกสุภาภรณ์ และเพิ่มสต๊อก J&N ให้อัตโนมัติ';h.className='hint';}
+    else h.textContent='';
+  };
+  const setSup=()=>{const fish=mode()==='fish';$('#sup').innerHTML='<option value="">เลือกผู้ขาย</option>'+M().suppliers.filter(s=>fish?s.cat==='ปลา':s.cat!=='ปลา').map(s=>`<option>${esc(s.name)}</option>`).join('');};
+  const destFish=()=>seg('dest',[...coldLocs(),[LINE,'เข้าไลน์ผลิตตรง']],coldLocs()[0]);
+  const destMat=()=>seg('dest',[storeLoc(),[LINE,'เข้าไลน์ผลิตตรง']],storeLoc());
+  const add=()=>{
+    if(mode()==='fish'){
+      addLine('#lines',`<div class="grid2 keep"><div class="field"><label>ชนิดปลา</label><select class="sp"><option value="">เลือกชนิดปลา</option>${species().map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
+      <div class="field"><span class="lbl">รูปแบบ</span>${seg('form',['ปลาตัว','ปลาตัด'],'')}</div></div>
+      ${xfer()?`<div class="field"><span class="lbl">เอาออกจาก (สุภาภรณ์)</span>${fromFish()}</div>`:''}
+      <div class="field"><span class="lbl">เก็บที่</span><div class="dw">${destFish()}</div></div>
+      <div class="grid2 keep"><div class="field"><label>จำนวนกระบะ</label><input class="crates num" type="number" inputmode="numeric" min="0" step="1"></div>
+      <div class="field"><label>น้ำหนัก (กก.)</label><input class="kg num" type="number" inputmode="decimal" min="0" step="0.01"></div></div><div class="field prf"><label>ราคา/กก. (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div><div class="hint avg"></div>`,'ปลาชนิดที่');
+    }else if(mode()==='fg'){
+      addLine('#lines',`<div class="field"><label>สินค้า (SKU)</label><select class="sku">${skuOptions()}</select></div>
+      <div class="field"><span class="lbl">จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะที่ย้าย)</span></span><div class="szgrid">${SIZES.map(z=>`<label class="szc"><span>${z[1]}</span><input class="fgz num" data-z="${z[0]}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}<label class="szc"><span>กระป๋องหลวม (กป)</span><input class="fgz num" data-z="1" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label></div>
+      <div class="hint">เฉพาะกระป๋องที่<b>ติดฉลากแล้ว</b> (ในกล่อง หรือหลวม)</div></div>`,'สินค้าที่');
+    }else{
+      const d=addLine('#lines',`<div class="field"><label>รายการ</label><select class="it">${itemOptions(otherItems(),'เลือกรายการ')}</select></div>
+      <div class="field"><span class="lbl">เก็บที่</span><div class="dw">${destMat()}</div></div>
+      <div class="grid2 keep"><div class="field"><label>จำนวน <span class="unit opt"></span></label><input class="qty num" type="number" inputmode="decimal" min="0" step="0.01"></div>
+      <div class="field basef"><label>รวมทั้งหมด <span class="bunit opt"></span></label><input class="base num" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+      <div class="hint conv"></div>
+      <div class="field prf"><label>ราคาต่อ<span class="punit">หน่วย</span> (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div>
+      <div class="grid2 keep lotrow"><div class="field"><label>Lot <span class="opt">(ถ้ามี)</span></label><input class="lot"></div><div class="field"><label>วันหมดอายุ <span class="opt">(ถ้ามี)</span></label><input class="exp" type="date"></div></div>`,'รายการที่');
+      d.querySelector('.it').onchange=()=>matInfo(d);
+    }
+  };
+  const matInfo=d=>{const it=itemBy(d.querySelector('.it').value);d.querySelector('.punit').textContent=it?it.unit:'หน่วย';d.querySelector('.unit').textContent=it?'('+it.unit+')':'';d.querySelector('.bunit').textContent=it?'('+it.base+' จากใบส่งของ)':'';
+    d.querySelector('.basef').hidden=!it||!!it.pack; d.querySelector('.lotrow').hidden=!it||it.cat!=='วัตถุดิบ'; totals();};
+  const reset=()=>{sdSync();setSup();$('#lines').innerHTML='';add();$$('#lines .prf').forEach(x=>x.hidden=xfer());totals();};
+  refreshLocs=()=>$$('#lines .dw').forEach(w=>w.innerHTML=mode()==='fish'?destFish():destMat());
+  $('[data-seg="mode"]').addEventListener('segchange',reset);
+  $('[data-seg="src"]').addEventListener('segchange',reset);
+  $('[data-seg="dst"]').addEventListener('segchange',e=>{factory=e.detail===SP?SP:'J&N';refreshLocs();sdSync();});
+  $('#add').onclick=()=>{add();$$('#lines .prf').forEach(x=>x.hidden=xfer());}; $('#lines').addEventListener('input',totals);
+  function totals(){
+    if(mode()==='fg'){let c=0;$$('#lines .fgz').forEach(x=>c+=(n(x.value.trim())||0)*Number(x.dataset.z));$('#tSub').textContent='รวม';$('#tVal').textContent=fmt(c)+' กป';return;}
+    if(mode()==='fish'){let c=0,k=0;$$('#lines .item').forEach(d=>{const cr=n(val(d,'.crates')),kg=n(val(d,'.kg'));c+=cr||0;k+=kg||0;const a=d.querySelector('.avg');
+      if(cr&&kg){const per=kg/cr;a.textContent='เฉลี่ย '+per.toFixed(1)+' กก./กระบะ'+(per<10||per>40?' • ตัวเลขดูผิดปกติ ลองเช็กอีกครั้ง':'');a.className='hint avg'+(per<10||per>40?' warn':'');}else a.textContent='';});
+      $('#tSub').textContent='รวม '+fmt(c)+' กระบะ';$('#tVal').textContent=fmt(k,2)+' กก.';}
+    else{$$('#lines .item').forEach(d=>{const it=itemBy(val(d,'.it'));const q=n(val(d,'.qty'));const cv=d.querySelector('.conv');
+      cv.textContent=it&&it.pack&&q?'= '+fmt(q*it.pack)+' '+it.base+' (ขนาดคงที่ '+it.pack+' '+it.base+'/'+it.unit+')':'';});
+      $('#tSub').textContent=$$('#lines .item').length+' รายการ';$('#tVal').textContent='';}
+  }
+  $('#photo').onchange=async()=>{const f=$('#photo').files[0];if(!f){photoData='';$('#photoPrev').hidden=true;return;}try{photoData=await shrink(f);$('#photoPrev').src=photoData;$('#photoPrev').hidden=false;}catch(e){photoData='';toast(e.message,true);}};
+  reset();
+  pending=()=>{
+    const fish=mode()==='fish',isFg=mode()==='fg',sv=srcV(),dv=dstV(),x=xfer(),sup=sv==='ผู้ขาย'?val(null,'#sup'):'',srcO=val(null,'#srcO'),dstO=val(null,'#dstO'),lines=[],fg=[],sum=[],errs=[];
+    if(sv==='ผู้ขาย'&&!sup)errs.push('เลือกผู้ขาย');
+    if(sv==='อื่นๆ'&&!srcO)errs.push('ระบุต้นทาง');
+    if(dv==='อื่นๆ'&&!dstO)errs.push('ระบุปลายทาง');
+    if(x&&dv===SP)errs.push('ต้นทางและปลายทางเป็นสุภาภรณ์ทั้งคู่ไม่ได้');
+    if(isFg&&!x)errs.push('สินค้าสำเร็จรูป ใช้ได้เมื่อต้นทาง = สุภาภรณ์');
+    $$('#lines .item').forEach((d,i)=>{
+      if(isFg){const s=val(d,'.sku');if(!s){errs.push(`สินค้าที่ ${i+1}: เลือกสินค้า`);return;}let k=0;
+        $$('.fgz',d).forEach(z=>{const b=n(z.value.trim());if(!(b>0))return;if(b%1){errs.push(`สินค้าที่ ${i+1}: จำนวนต้องเป็นจำนวนเต็ม`);return;}k++;fg.push({sku:s,size:z.dataset.z,boxes:b});sum.push([s,z.dataset.z==='1'?'กระป๋องหลวม':'กล่อง '+z.dataset.z,fmt(b)+(z.dataset.z==='1'?' กป':' กล่อง')]);});
+        if(!k)errs.push(`สินค้าที่ ${i+1}: กรอกจำนวนอย่างน้อย 1 ช่อง`);return;}
+      if(fish){const sp=val(d,'.sp'),fm=segVal(d,'form'),kg=n(val(d,'.kg')),cr=n(val(d,'.crates')),loc=segVal(d,'dest');
+        if(!sp||!fm||!(kg>0)||!(cr>=0)){errs.push(`ปลาชนิดที่ ${i+1}: เลือกชนิด รูปแบบ (ตัว/ตัด) และกรอกกระบะ + น้ำหนัก`);return;}
+        const item=sp+' ('+fm+')';const pr=x?'':val(d,'.price');lines.push({item,loc,kg,crates:cr,price:pr,fromLoc:x?segVal(d,'from'):''});sum.push([item,(loc===LINE?'เข้าไลน์ผลิตตรง':loc)+' • '+fmt(cr)+' กระบะ'+(pr?' • '+fmt(pr,2)+' บ./กก.':''),fmt(kg,2)+' กก.']);}
+      else{const it=itemBy(val(d,'.it')),q=n(val(d,'.qty')),b=n(val(d,'.base')),loc=segVal(d,'dest');
+        if(!it||!(q>0)){errs.push(`รายการที่ ${i+1}: เลือกรายการและกรอกจำนวน`);return;}
+        if(!it.pack&&!(b>0)){errs.push(`รายการที่ ${i+1}: กรอกจำนวนรวม (${it.base}) จากใบส่งของ`);return;}
+        const base=it.pack?q*it.pack:b;const pr=x?'':val(d,'.price');lines.push({item:it.name,loc,qty:q,base,lot:val(d,'.lot'),exp:val(d,'.exp'),price:pr});
+        sum.push([it.name,(loc===LINE?'เข้าไลน์ผลิตตรง':loc)+' • '+fmt(q)+' '+it.unit+(pr?' • '+fmt(pr,2)+' บ./'+it.unit:''),fmt(base)+' '+it.base]);}
+    });
+    const srcName=sv==='ผู้ขาย'?sup:x?SP:'อื่นๆ: '+srcO, dstName=dv==='อื่นๆ'?'อื่นๆ: '+dstO:dv===SP?SP:'คลัง J&N';
+    return {errs,sum,head:srcName+' → '+dstName+(x?' • ย้ายระหว่างโรงงาน':'')+(val(null,'#doc')?' • เอกสาร '+val(null,'#doc'):'')+(photoData?' • มีรูปใบส่งของ':''),payload:{source:sv,sourceOther:sv==='อื่นๆ'?srcO:'',destOther:dv==='อื่นๆ'?dstO:'',supplier:sup,doc:val(null,'#doc'),note:val(null,'#note'),photo:photoData,lines,fg}};
+  };
+}
+
+/* ---------- เบิกเข้าไลน์ / คืน ---------- */
+function fMove(){
+  shell('move',`<section class="panel"><div class="field"><span class="lbl">ทิศทาง</span>${seg('dir',[['toLine','เบิกเข้าไลน์ผลิต'],['back','คืนจากไลน์ เข้าห้องเย็น/คลัง']],'toLine')}</div>
+  <div class="hint" id="dirHint"></div></section>
+  <section class="panel"><h3>รายการ</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการ</button>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
+  const storeOpts=it=>{const l=it&&it.cat==='ปลา'?coldLocs():[storeLoc()];return l.map(x=>`<option>${esc(x)}</option>`).join('');};
+  const hint=()=>{$('#dirHint').textContent=segVal(null,'dir')==='back'?'ของเหลือบนไลน์ที่ส่งกลับเข้าห้องเย็น/คลัง':'ของที่นำออกจากห้องเย็น/คลัง ไปใช้บนไลน์ผลิต';$$('#lines .slbl').forEach(s=>s.textContent=segVal(null,'dir')==='back'?'คืนเข้า':'เบิกจาก');};
+  const add=()=>{const d=addLine('#lines',`<div class="field"><label>รายการ</label><select class="it">${itemOptions(M().items,'เลือกรายการ')}</select></div>
+    <div class="grid2 keep"><div class="field"><label class="slbl">เบิกจาก</label><select class="st">${storeOpts(null)}</select></div>
+    <div class="field"><label>จำนวน <span class="bu opt"></span></label><input class="qty num" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+    <div class="field crf" hidden><label>จำนวนกระบะ <span class="opt">(ถ้ามี)</span></label><input class="crates num" type="number" inputmode="numeric" min="0"></div>`,'รายการที่');
+    d.querySelector('.it').onchange=()=>{const it=itemBy(val(d,'.it'));d.querySelector('.st').innerHTML=storeOpts(it);d.querySelector('.bu').textContent=it?'('+it.base+')':'';d.querySelector('.crf').hidden=!it||it.cat!=='ปลา';};hint();};
+  refreshLocs=()=>$$('#lines .item').forEach(d=>{d.querySelector('.st').innerHTML=storeOpts(itemBy(val(d,'.it')));});
+  $('[data-seg="dir"]').addEventListener('segchange',hint);$('#add').onclick=add;add();hint();
+  pending=()=>{const dir=segVal(null,'dir'),lines=[],sum=[],errs=[];
+    $$('#lines .item').forEach((d,i)=>{const it=itemBy(val(d,'.it')),q=n(val(d,'.qty')),st=val(d,'.st');
+      if(!it||!(q>0)){errs.push(`รายการที่ ${i+1}: เลือกรายการและกรอกจำนวน`);return;}
+      lines.push({item:it.name,store:st,qty:q,crates:val(d,'.crates')});sum.push([it.name,dir==='back'?LINE+' → '+st:st+' → '+LINE,fmt(q)+' '+it.base]);});
+    return {errs,sum,head:dir==='back'?'คืนจากไลน์ผลิต':'เบิกเข้าไลน์ผลิต',payload:{direction:dir,note:val(null,'#note'),lines}};};
+}
+
+/* ---------- ใช้จริงสิ้นวัน ---------- */
+function fUse(){
+  const quick=M().items.filter(i=>i.cat==='วัตถุดิบ'||i.name==='กระป๋อง'||i.name==='ฝากระป๋อง');
+  shell('use',`<section class="panel"><div class="field"><span class="lbl">ประเภท</span>${seg('type',[['ใช้ผลิต','ใช้ผลิตจริง'],['ตัดเสีย','ตัดเสีย / ทิ้ง']],'ใช้ผลิต')}</div>
+  <div class="field"><label for="from">ตัดจาก</label><select id="from"></select></div>
+  <div class="warnbox">ปลา: บันทึกในหน้า <b>ผลิต</b> • ฉลากและกล่อง: ตัดอัตโนมัติจากหน้า <b>ติดฉลาก</b> และ <b>ลงกล่อง</b></div></section>
+  <section class="panel"><h3>วัตถุดิบซอส กระป๋อง ฝา</h3><div class="hint">กรอกเฉพาะที่ใช้วันนี้ ช่องว่าง = ไม่ได้ใช้</div>
+  <div id="quick">${quick.map(i=>`<div class="qrow" data-item="${esc(i.name)}"><span>${esc(i.name)}</span><input class="num" type="number" inputmode="decimal" min="0" step="0.01" aria-label="${esc(i.name)}"><span class="u">${esc(i.base)}</span></div>`).join('')}</div>
+  <h3>รายการอื่น</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการอื่น</button>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
+  const fromOpts=()=>{$('#from').innerHTML=[LINE,...coldLocs(),storeLoc()].map(x=>`<option>${esc(x)}</option>`).join('');};
+  refreshLocs=fromOpts;fromOpts();
+  const add=()=>{const d=addLine('#lines',`<div class="grid2 keep"><div class="field"><label>รายการ</label><select class="it">${itemOptions(otherItems().filter(i=>!quick.includes(i)),'เลือกรายการ')}</select></div>
+    <div class="field"><label>จำนวน <span class="bu opt"></span></label><input class="qty num" type="number" inputmode="decimal" min="0" step="0.01"></div></div>`,'รายการที่');
+    d.querySelector('.it').onchange=()=>{const it=itemBy(val(d,'.it'));d.querySelector('.bu').textContent=it?'('+it.base+')':'';};};
+  $('#add').onclick=add;
+  pending=()=>{const from=val(null,'#from'),type=segVal(null,'type'),lines=[],sum=[],errs=[];
+    $$('#quick .qrow').forEach(r=>{const q=n(r.querySelector('input').value);if(q>0){const it=itemBy(r.dataset.item);lines.push({item:it.name,qty:q,from});sum.push([it.name,'จาก '+from,fmt(q)+' '+it.base]);}});
+    $$('#lines .item').forEach((d,i)=>{const it=itemBy(val(d,'.it')),q=n(val(d,'.qty'));if(!it&&!val(d,'.qty'))return;
+      if(!it||!(q>0)){errs.push(`รายการอื่นที่ ${i+1}: เลือกรายการและกรอกจำนวน`);return;}lines.push({item:it.name,qty:q,from});sum.push([it.name,'จาก '+from,fmt(q)+' '+it.base]);});
+    if(!lines.length&&!errs.length)errs.push('ยังไม่มีรายการที่กรอกจำนวน');
+    return {errs,sum,head:(type==='ตัดเสีย'?'ตัดเสีย':'ใช้ผลิตจริง')+' • ตัดจาก '+from,payload:{type,note:val(null,'#note'),lines}};};
+}
+
+/* ---------- ผลิต ---------- */
+function fProduce(){
+  shell('produce',`<section class="panel"><div class="grid2"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
+  <div class="field"><label for="lot">ล็อต <span class="opt">(ถ้ามี)</span></label><input id="lot"></div></div>
+  <div class="grid2 keep"><div class="field"><label for="good">กระป๋องดี</label><input id="good" class="num" type="number" inputmode="numeric" min="0"></div>
+  <div class="field"><label for="bad">กระป๋องเสีย</label><input id="bad" class="num" type="number" inputmode="numeric" min="0"></div></div></section>
+  <section class="panel"><h3>ปลาที่ใช้จริง <span class="opt">(ตัดจากไลน์ผลิต)</span></h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มปลาอีกชนิด</button>
+  <div class="grid2 keep"><div class="field"><label for="fw">ปลาเสีย (กก.)</label><input id="fw" class="num" type="number" inputmode="decimal" min="0" step="0.01"></div>
+  <div class="field"><label for="sw">ซอสเสีย (กก.)</label><input id="sw" class="num" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
+  <div class="field"><label for="avg">ปลาเฉลี่ย/กระป๋อง (กรัม) <span class="opt">(ถ้ามี เช่น 63)</span></label><input id="avg" class="num" type="number" inputmode="decimal" min="0"></div>
+  <div class="hint" id="chk"></div>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
+  <div class="total"><span>ปลาใช้รวม</span><b class="num" id="tVal">0 กก.</b></div></section>`);
+  const add=()=>addLine('#lines',`<div class="grid2 keep"><div class="field"><label>ชนิดปลา</label><select class="sp"><option value="">เลือกชนิดปลา</option>${species().map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
+    <div class="field"><span class="lbl">รูปแบบ</span>${seg('form',['ปลาตัว','ปลาตัด'],'')}</div></div>
+    <div class="field"><label>ปลาใช้จริง (กก.)</label><input class="kg num" type="number" inputmode="decimal" min="0" step="0.01"></div>`,'ปลาชนิดที่');
+  $('#add').onclick=add;add();
+  const check=()=>{let k=0;$$('#lines .kg').forEach(i=>k+=n(i.value)||0);$('#tVal').textContent=fmt(k,2)+' กก.';
+    const g=n(val(null,'#good')),a=n(val(null,'#avg'));const c=$('#chk');
+    if(g>0&&a>0&&k>0&&a*g/1000>k){c.textContent='⚠ น้ำหนักปลาเฉลี่ย × กระป๋องดี ('+fmt(a*g/1000,1)+' กก.) มากกว่าปลาใช้จริง ตรวจน้ำหนักปลา/ปลาใช้จริงอีกครั้ง';c.className='hint warn';}else c.textContent='';};
+  $('#f').addEventListener('input',check);
+  pending=()=>{const sku=val(null,'#sku'),good=n(val(null,'#good')),fish=[],sum=[],errs=[];
+    if(!sku)errs.push('เลือกสินค้า (SKU)');if(!(good>=0))errs.push('กรอกกระป๋องดี');
+    $$('#lines .item').forEach((d,i)=>{const sp=val(d,'.sp'),fm=segVal(d,'form'),kg=n(val(d,'.kg'));
+      if(!sp&&!val(d,'.kg'))return;if(!sp||!fm||!(kg>0)){errs.push(`ปลาชนิดที่ ${i+1}: เลือกชนิด รูปแบบ และกรอก กก.`);return;}
+      fish.push({item:sp+' ('+fm+')',kg});sum.push([sp+' ('+fm+')','ตัดจากไลน์ผลิต',fmt(kg,2)+' กก.']);});
+    sum.unshift([sku||'-','กระป๋องเสีย '+fmt(val(null,'#bad')||0),fmt(good)+' กป ดี']);
+    return {errs,sum,head:'ผลิต'+(val(null,'#lot')?' • ล็อต '+val(null,'#lot'):''),payload:{sku,lot:val(null,'#lot'),good,bad:val(null,'#bad'),fishWaste:val(null,'#fw'),sauceWaste:val(null,'#sw'),avgG:val(null,'#avg'),note:val(null,'#note'),fish}};};
+}
+
+/* ---------- ติดฉลาก ---------- */
+function fLabel(){
+  shell('label',`<section class="panel"><div class="grid2"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
+  <div class="field"><label for="lot">ล็อต <span class="opt">(ถ้ามี)</span></label><input id="lot"></div></div>
+  <div class="grid2 keep"><div class="field"><label for="good">ติดฉลากดี เวลางาน (กป)</label><input id="good" class="num" type="number" inputmode="numeric" min="0"></div>
+  <div class="field"><label for="ot">ติดฉลากดี OT (กป)</label><input id="ot" class="num" type="number" inputmode="numeric" min="0"></div></div>
+  <div class="grid2 keep"><div class="field"><label for="dent">บุบตอนติดฉลาก (กป)</label><input id="dent" class="num" type="number" inputmode="numeric" min="0"></div>
+  <div class="field"><label for="waste">ฉลากเสีย (แผ่น)</label><input id="waste" class="num" type="number" inputmode="numeric" min="0"></div></div>
+  <div class="hint">ระบบตัดสต๊อกฉลากอัตโนมัติ = ติดดี + OT + ฉลากเสีย (จาก ${esc(storeLoc())})</div>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
+  pending=()=>{const sku=val(null,'#sku'),g=n(val(null,'#good'))||0,o=n(val(null,'#ot'))||0,errs=[];if(!sku)errs.push('เลือกสินค้า (SKU)');if(!(g+o>0))errs.push('กรอกจำนวนติดฉลากดี');
+    return {errs,sum:[[sku,'เวลางาน '+fmt(g)+' • OT '+fmt(o)+' • บุบ '+fmt(val(null,'#dent')||0)+' • ฉลากเสีย '+fmt(val(null,'#waste')||0),fmt(g+o)+' กป']],head:'ติดฉลาก',
+      payload:{sku,lot:val(null,'#lot'),good:g,ot:o,dent:val(null,'#dent'),waste:val(null,'#waste'),note:val(null,'#note')}};};
+}
+
+/* ---------- ลงกล่อง ---------- */
+const SIZES=[['20','กล่อง 20'],['40','กล่อง 40'],['50','กล่อง 50'],['100','กล่อง 100']];
+function fBox(){
+  shell('box',`<section class="panel"><div class="grid2"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
+  <div class="field"><label for="lot">ล็อต <span class="opt">(ถ้ามี)</span></label><input id="lot"></div></div></section>
+  <section class="panel"><h3>จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะขนาดที่ลงวันนี้)</span></h3><div class="list" id="lines">${SIZES.map(z=>`<div class="item bxrow" data-z="${z[0]}"><b class="bxh">${z[1]}</b><div class="g3">
+    <label class="szc"><span>${z[0]==='10'?'แพ็คดี':'กล่องดี'}</span><input class="good num" type="number" inputmode="numeric" min="0" placeholder="0"></label>
+    <label class="szc"><span>บุบ (กป)</span><input class="dent num" type="number" inputmode="numeric" min="0" placeholder="0"></label>
+    <label class="szc"><span>${z[0]==='10'?'แพ็คเสีย':'กล่องเสีย'}</span><input class="waste num" type="number" inputmode="numeric" min="0" placeholder="0"></label></div></div>`).join('')}</div>
+  <div class="hint">ระบบตัดสต๊อกกล่องเปล่าอัตโนมัติ = กล่องดี + กล่องเสีย (จาก ${esc(storeLoc())})</div>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
+  <div class="total"><span>รวมกระป๋องในกล่องดี</span><b class="num" id="tVal">0 กป</b></div></section>`);
+  const tot=()=>{let t=0;$$('#lines .bxrow').forEach(d=>t+=(n(val(d,'.good'))||0)*Number(d.dataset.z));$('#tVal').textContent=fmt(t)+' กป';};
+  $('#f').addEventListener('input',tot);
+  pending=()=>{const sku=val(null,'#sku'),lines=[],sum=[],errs=[];if(!sku)errs.push('เลือกสินค้า (SKU)');
+    $$('#lines .bxrow').forEach(d=>{const s=d.dataset.z,g=val(d,'.good'),dn=val(d,'.dent'),w=val(d,'.waste');if(!g&&!dn&&!w)return;
+      const gn=n(g)||0;lines.push({size:s,good:gn,dent:dn,waste:w});sum.push([(s==='10'?'แพ็ค ':'กล่อง ')+s,'บุบ '+fmt(dn||0)+' กป • เสีย '+fmt(w||0)+' ใบ',fmt(gn)+' '+(s==='10'?'แพ็ค':'กล่อง')]);});
+    if(!lines.length)errs.push('กรอกจำนวนอย่างน้อย 1 ขนาด');
+    return {errs,sum,head:sku+' • ลงกล่อง',payload:{sku,lot:val(null,'#lot'),note:val(null,'#note'),lines}};};
+}
+
+/* ---------- จ่ายออก ---------- */
+const obxHtml=()=>{const L=M().items.filter(i=>i.cat==='บรรจุภัณฑ์ออนไลน์'||i.name==='ถุงแพ็ค 10').concat(M().items.filter(i=>i.cat==='บรรจุภัณฑ์'&&/^กล่อง \d+$/.test(i.name)).sort((a,b)=>parseInt(a.name.slice(6))-parseInt(b.name.slice(6))));return L.length?`<section class="panel" id="obox" hidden><h3>กล่องที่ใช้แพ็ก (ออนไลน์)</h3><div class="hint">กรอกเฉพาะกล่องที่ใช้ ระบบตัดสต๊อก<b>กล่องเปล่า</b>ให้อัตโนมัติ • กล่อง 20–100 ตรงนี้ = กล่องเปล่าใช้แพ็ก <b>ไม่ตัดสต๊อกปลากระป๋อง</b></div><div class="szgrid">${L.map(i=>`<label class="szc"><span>${esc(i.name)}</span><input class="obx num" data-item="${esc(i.name)}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}</div></section>`:'<div id="obox" hidden></div>';};
+function fDispatch(){
+  shell('dispatch',`<section class="panel"><div class="grid2"><div class="field"><label for="ch">ช่องทาง</label><select id="ch"><option value="">เลือกช่องทาง</option>${M().channels.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
+  <div class="field"><label for="tp">ประเภทการเคลื่อนย้าย</label><select id="tp"><option value="">เลือกประเภท</option>${M().moveTypes.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div></div>
+  <div class="grid2"><div class="field"><label for="cust">ลูกค้า / รถ / ปลายทาง</label><input id="cust"></div>
+  <div class="field"><label for="ref">เลขอ้างอิง (ออเดอร์/ใบส่ง/ใบโอน)</label><input id="ref"></div></div>
+  <div class="field" id="cashF" hidden><label for="cash">เงินรับหน้าร้าน (บาท)</label><input id="cash" class="num" type="number" inputmode="decimal" min="0"></div>
+  <div class="hint">Cash van = โอนขึ้นรถ ไม่ใช่ยอดขาย</div></section>
+  <section class="panel"><h3>สินค้าที่จ่ายออก</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มสินค้า</button>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>${obxHtml()}`);
+  $('#ch').onchange=()=>{$('#obox').hidden=!/ออนไลน์|online/i.test(val(null,'#ch'));};
+  $('#tp').onchange=()=>$('#cashF').hidden=!/หน้าร้าน/.test(val(null,'#tp'));
+  const add=()=>addLine('#lines',`<div class="field"><label>สินค้า (SKU)</label><select class="sku">${skuOptions(true)}</select></div>
+    <div class="field szf"><span class="lbl">จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะขนาดที่จ่าย)</span></span><div class="szgrid">${SIZES.map(z=>`<label class="szc"><span>${z[1]}</span><input class="bxz num" data-z="${z[0]}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}<label class="szc"><span>แพ็คพิเศษ (กป)</span><input class="spc num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label></div>
+    <div class="hint">แพ็คพิเศษ = จำนวน<b>กระป๋อง</b>รวมที่ไม่ได้อยู่ในกล่องปกติ (ออเดอร์ผสม) • ตัดจากกระป๋องติดฉลากที่ยังไม่ลงกล่อง</div>
+    <details class="opn"><summary>แกะกล่องเพื่อเอากระป๋องมาใช้ (ถ้ามี)</summary><div class="szgrid">${SIZES.map(z=>`<label class="szc"><span>แกะ${z[1]}</span><input class="opz num" data-z="${z[0]}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}</div><div class="hint">ระบบลดสต๊อกกล่องที่แกะ และเพิ่มเป็นกระป๋องหลวมให้อัตโนมัติ</div></details></div>
+    <div class="field btf" hidden><label>จำนวน (ขวด)</label><input class="bx num" type="number" inputmode="numeric" min="0" step="1"></div>`,'สินค้าที่');
+  const isBottle=x=>((M().skus.find(s=>s.name===x)||{}).unit==='ขวด');
+  const add2=()=>{const d=add();const sel=d.querySelector('.sku');sel.onchange=()=>{const b=isBottle(sel.value);d.querySelector('.szf').hidden=b;d.querySelector('.btf').hidden=!b;};return d;};
+  $('#add').onclick=add2;add2();
+  pending=()=>{const ch=val(null,'#ch'),tp=val(null,'#tp'),lines=[],sum=[],errs=[],openBoxes=[];if(!ch)errs.push('เลือกช่องทาง');if(!tp)errs.push('เลือกประเภทการเคลื่อนย้าย');
+    $$('#lines .item').forEach((d,i)=>{const s=val(d,'.sku');if(!s){errs.push(`สินค้าที่ ${i+1}: เลือกสินค้า`);return;}
+      if(isBottle(s)){const b=n(val(d,'.bx'));if(!(b>0)){errs.push(`สินค้าที่ ${i+1}: กรอกจำนวนขวด`);return;}lines.push({sku:s,size:'1',boxes:b});sum.push([s,'ขวด',fmt(b)+' ขวด']);return;}
+      let k=0;$$('.bxz',d).forEach(x=>{const b=n(x.value.trim()),z=x.dataset.z;if(!(b>0))return;k++;lines.push({sku:s,size:z,boxes:b});sum.push([s,'กล่อง '+z,fmt(b)+' กล่อง']);});
+      const sp=n(val(d,'.spc'));if(sp>0){k++;lines.push({sku:s,size:'1',boxes:sp});sum.push([s,'แพ็คพิเศษ',fmt(sp)+' กป']);}
+      $$('.opz',d).forEach(x=>{const q=n(x.value.trim());if(q>0){k++;openBoxes.push({sku:s,size:x.dataset.z,qty:q});sum.push([s,'แกะกล่อง '+x.dataset.z,fmt(q)+' กล่อง']);}});
+      if(!k)errs.push(`สินค้าที่ ${i+1}: กรอกจำนวนอย่างน้อย 1 ขนาด`);});
+    const packBoxes=[];if(!$('#obox').hidden)$$('.obx').forEach(x=>{const q=n(x.value.trim());if(q>0){packBoxes.push({item:x.dataset.item,qty:q});sum.push([x.dataset.item,'กล่องแพ็กออนไลน์',fmt(q)+' ใบ']);}});
+    return {errs,sum,head:ch+' • '+tp+(val(null,'#cust')?' • '+val(null,'#cust'):''),payload:{channel:ch,type:tp,ref:val(null,'#ref'),customer:val(null,'#cust'),cash:val(null,'#cash'),note:val(null,'#note'),lines,packBoxes,openBoxes}};};
+}
+
+/* ---------- ตรวจนับ ---------- */
+const CGROUPS=[['ปลา',i=>i.cat==='ปลา'],['ส่วนผสมซอส / วัตถุดิบ',i=>i.cat==='วัตถุดิบ'],['ฉลาก',i=>/^ฉลาก/.test(i.name)],['กระป๋อง ฝา กล่อง ถุง',i=>i.cat==='บรรจุภัณฑ์'],['กล่องออนไลน์',i=>i.cat==='บรรจุภัณฑ์ออนไลน์'],['สินค้า OEM',i=>i.cat==='สินค้า OEM'],['วัสดุสิ้นเปลือง',i=>i.cat==='วัสดุสิ้นเปลือง'],['พลังงาน',i=>i.cat==='พลังงาน'],['อื่นๆ',()=>true]];
+function fCount(){
+  shell('count',`<section class="panel"><div class="field"><label>รอบการนับ</label>${seg('ctype',[['วัน','ประจำวัน'],['สัปดาห์','ประจำสัปดาห์'],['เดือน','ประจำเดือน']],'วัน')}</div>
+  <div class="field"><label for="loc">สถานที่นับ</label><select id="loc"></select></div>
+  <div class="field"><label for="q">ค้นหารายการ</label><input id="q" placeholder="พิมพ์ชื่อ เช่น แชลั้น กล่อง ฉลาก"></div>
+  <div class="hint">ห้องเย็น = นับปลา • คลังวัตถุดิบ = ส่วนผสม ฉลาก กล่อง OEM ฯลฯ • แตะหัวข้อเพื่อเปิด/ปิด • กรอกเฉพาะที่นับ • 0 = นับแล้วไม่มีของ • ช่องว่าง = ไม่ได้นับ</div></section>
+  <section class="panel"><h3 id="cTitle">รายการ</h3><div id="rows"></div>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
+  const ctype=()=>{const b=$('[data-seg="ctype"] button[aria-pressed="true"]');return b?b.dataset.v:'วัน';};
+  const setType=v=>$$('[data-seg="ctype"] button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v===v));
+  const locOpts=()=>{$('#loc').innerHTML=M().locations.filter(l=>l.factory===factory&&l.type!=='ไลน์ผลิต').map(l=>`<option data-type="${esc(l.type)}">${esc(l.name)}</option>`).join('');rows();};
+  const tally=()=>$$('#rows details.cg').forEach(d=>{const ins=$$('.cq',d);d.querySelector('.cnt').textContent=ins.filter(x=>x.value.trim()!=='').length+'/'+ins.length;});
+  const rows=()=>{const o=$('#loc').selectedOptions[0];const cold=o&&o.dataset.type==='ห้องเย็น';setType(cold?'วัน':'สัปดาห์');
+    const list=cold?fishItems():otherItems();const groups=CGROUPS.map(g=>[g[0],[]]);
+    list.forEach(i=>{const k=CGROUPS.findIndex(g=>g[1](i));groups[k][1].push(i);});
+    $('#cTitle').textContent=cold?'ปลา (กก.)  •  ช่องขวา = กักกัน/รอ QC':'วัตถุดิบ บรรจุภัณฑ์ และอื่นๆ';
+    $('#rows').innerHTML=groups.filter(g=>g[1].length).map(g=>`<details class="cg"${cold?' open':''}><summary><span>${esc(g[0])}</span><span class="chip cnt"></span></summary>`+g[1].map(i=>`<div class="qrow ${cold?'fish':''}" data-item="${esc(i.name)}"><span>${esc(i.name)}</span><input class="num cq" type="number" inputmode="decimal" min="0" step="0.01" aria-label="${esc(i.name)}">${cold?'<input class="num qc" type="number" inputmode="decimal" min="0" step="0.01" placeholder="QC" aria-label="QC">':`<span class="u">${esc(i.base)}</span>`}</div>`).join('')+'</details>').join('');
+    tally();};
+  refreshLocs=locOpts;$('#loc').onchange=rows;locOpts();
+  $('#rows').addEventListener('input',tally);
+  $('#q').oninput=()=>{const q=val(null,'#q');$$('#rows details.cg').forEach(d=>{let any=false;$$('.qrow',d).forEach(r=>{r.hidden=!!q&&!r.dataset.item.includes(q);if(!r.hidden)any=true;});d.hidden=!!q&&!any;if(q&&any)d.open=true;});};
+  pending=()=>{const loc=val(null,'#loc'),lines=[],sum=[],errs=[],t=ctype();
+    $$('#rows .qrow').forEach(r=>{const v=r.querySelector('.cq').value.trim();if(v==='')return;const q=Number(v);if(!(q>=0)){errs.push(r.dataset.item+': ตัวเลขไม่ถูกต้อง');return;}
+      const it=itemBy(r.dataset.item),qc=r.querySelector('.qc')?r.querySelector('.qc').value.trim():'';lines.push({item:it.name,qty:q,qc});sum.push([it.name,qc?'กักกัน/QC '+fmt(qc):'',fmt(q,2)+' '+it.base]);});
+    if(!lines.length&&!errs.length)errs.push('ยังไม่ได้กรอกยอดนับ');
+    const note=val(null,'#note');
+    return {errs,sum,head:'ตรวจนับประจำ'+t+' • '+loc,payload:{loc,note:'[นับประจำ'+t+']'+(note?' '+note:''),lines}};};
+}
+
+/* ---------- ซ่อมบำรุงเครื่องจักร (loads its data only when this tab is opened) ---------- */
+const MT_TEST=false; // true = show the "ทดสอบ" chip (trial period)
+const mtCan=()=>!!B.mt; // server decides: ผู้ดูแล + trial list, or everyone after the trial
+let MT=null, mtFac='J&N', // J&N only: สุภาภรณ์ is the OEM partner and keeps its own maintenance
+   mtView='pm', mtHistM='';
+const mtFreq=f=>({1:'ทุกวัน',7:'ทุกสัปดาห์',30:'ทุกเดือน',180:'ทุก 6 เดือน',365:'ทุกปี'})[f]||'ทุก '+f+' วัน';
+const mtD=s=>s?dshort(s):'–';
+const mtName=x=>esc(x.machine)+(x.units>1||x.unit>1?' <span class="opt">เครื่องที่ '+x.unit+'</span>':'');
+const mtMin=v=>{v=Number(v)||0;return v>=60?fmt(Math.floor(v/60))+' ชม. '+(v%60?v%60+' นาที':''):v+' นาที';};
+function fMaint(){
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ซ่อมบำรุงเครื่องจักร</h2>${MT_TEST?'<span class="chip">ทดสอบ</span>':''}</div>
+  <section class="panel"><div class="kpis" id="mtSum"></div>
+  <button type="button" class="primary" id="mtNew">+ บันทึกงานซ่อมบำรุง</button>
+  <div class="field"><span class="lbl">ดูข้อมูล</span>${seg('mview',[['pm','แผน PM'],['open','งานค้าง'],['hist','ประวัติ'],['down','เวลาหยุดเครื่อง']],mtView)}</div></section>
+  <div id="mt" class="mtbody"></div>`;
+  $('#back').onclick=home;
+  $('[data-seg="mview"]').addEventListener('segchange',e=>{mtView=e.detail;mtDraw();});
+  $('#mtNew').onclick=()=>{if(MT)mtForm({});};
+  window.scrollTo(0,0);
+  if(MT&&MT.fac===mtFac)mtDraw();else mtLoad();
+}
+function mtLoad(){
+  $('#mtSum').innerHTML='';$('#mt').innerHTML='<div class="center" style="min-height:30vh"><div class="spinner"></div></div>';
+  const f=mtFac;
+  run('mtLoad',f).then(d=>{if(f!==mtFac||!$('#mt'))return;MT=d;mtDraw();}).catch(e=>{if($('#mt'))$('#mt').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
+}
+function mtDraw(){
+  if(!MT||!$('#mt'))return;
+  const c=s=>MT.pm.filter(x=>x.st===s).length;
+  const month=MT.down.months[MT.down.months.length-1], li=MT.down.months.length-1;
+  const dn=MT.down.rows.reduce((a,r)=>a+r.m[li],0);
+  $('#mtSum').innerHTML=`<div class="kpi${c('over')?' hero':''}"><span>PM เลยกำหนด</span><b class="num">${c('over')}</b><small>ใกล้ถึงกำหนด ${c('soon')} • ยังไม่เคยบันทึก ${c('never')}</small></div>
+  <div class="kpi"><span>งานประจำวัน ยังไม่ทำวันนี้</span><b class="num">${c('daily')}</b><small>จาก ${MT.pm.filter(x=>x.freq===1).length} งาน</small></div>
+  <div class="kpi"><span>งานค้าง (รอติดตาม)</span><b class="num">${MT.open.length}</b><small>แตะ "งานค้าง" เพื่อปิดงาน</small></div>
+  <div class="kpi"><span>หยุดเครื่อง เดือนนี้</span><b class="num">${fmt(dn)} นาที</b><small>${dn?mtMin(dn):'ยังไม่มีการหยุดเครื่อง'}</small></div>`;
+  ({pm:mtPm,open:mtOpen,hist:mtHist,down:mtDown})[mtView]();
+}
+/* แผน PM: เลยกำหนด / ใกล้ถึงกำหนด / ประจำวัน / ยังไม่เคยบันทึก / ปกติ */
+function mtPm(){
+  const G=[['over','เลยกำหนด','over'],['soon','ใกล้ถึงกำหนด','soon'],['daily','งานประจำวัน • ยังไม่ทำวันนี้',''],['never','ยังไม่เคยบันทึก',''],['ok','ปกติ / ทำแล้ว','okc']];
+  const row=(x,g)=>{const i=MT.pm.indexOf(x);
+    const when=x.st==='over'?'เลยมา '+(-x.days)+' วัน':x.st==='soon'?(x.days===0?'ถึงกำหนดวันนี้':'อีก '+x.days+' วัน'):x.st==='daily'?'วันนี้ยังไม่ทำ':x.st==='never'?'ยังไม่เคยบันทึก':x.freq===1?'ทำแล้ววันนี้':'กำหนด '+mtD(x.next);
+    return `<div class="entry"><span class="t">${mtName(x)}</span><button type="button" class="linkbtn" data-pm="${i}">บันทึก →</button>
+    <div class="meta"><span class="chip ${g[2]}">${esc(when)}</span><span>${esc(x.task)}</span><span>${mtFreq(x.freq)} • ล่าสุด ${mtD(x.last)}</span></div></div>`;};
+  $('#mt').innerHTML=MT.pm.length?G.map(g=>{const L=MT.pm.filter(x=>x.st===g[0]).sort((a,b)=>(a.days==null?0:a.days)-(b.days==null?0:b.days));
+    if(!L.length)return '';
+    const body=`<div class="list">${L.map(x=>row(x,g)).join('')}</div>`;
+    return g[0]==='ok'||g[0]==='never'?`<section class="panel"><details><summary>${g[1]} (${L.length})</summary>${body}</details></section>`:`<section class="panel"><h3>${g[1]} <span class="opt">(${L.length})</span></h3>${body}</section>`;}).join('')
+    +'<p class="hint" style="text-align:center">ความถี่และรายการงาน แก้ได้ในชีต "แผน PM" • เตือนล่วงหน้า 7 วัน (งานรายเดือนขึ้นไป) / 1 วัน (งานรายสัปดาห์)</p>'
+    :'<section class="panel"><div class="empty">ยังไม่มีแผน PM ของโรงงานนี้</div></section>';
+  $$('[data-pm]').forEach(b=>b.onclick=()=>{const x=MT.pm[b.dataset.pm];mtForm({machine:x.machine,unit:x.unit,type:'PM ตามแผน',pm:[x.code]});});
+}
+const mtEntry=(l,extra)=>`<div class="entry"><span class="t">${mtName(l)}</span><span class="kg">${l.down?fmt(l.down)+' นาที':''}</span>
+  <div class="meta"><span class="chip ${l.status==='รอติดตาม'?'soon':'okc'}">${esc(l.status)}</span><span class="chip">${esc(l.type)}</span><span>${mtD(l.date)} ${esc(l.time)} น. • ${esc(l.who)}</span></div>
+  <div class="mtd">${l.problem?`<p><b>ปัญหา:</b> ${esc(l.problem)}</p>`:''}<p><b>ที่ทำ:</b> ${esc(l.action)}</p>${l.parts?`<p><b>อะไหล่:</b> ${esc(l.parts)}</p>`:''}${l.checks?`<p><b>ผลตรวจ:</b> ${esc(l.checks)}</p>`:''}${l.closedBy?`<p><b>ปิดงาน:</b> ${esc(l.closedBy)} ${esc(l.closedAt)}${l.closeNote?' • '+esc(l.closeNote):''}</p>`:''}</div>${extra||''}</div>`;
+function mtOpen(){
+  $('#mt').innerHTML=`<section class="panel"><h3>งานค้าง รอติดตาม <span class="opt">(${MT.open.length})</span></h3><div class="list">${MT.open.length?MT.open.map(l=>mtEntry(l,`<div class="mtclose"><input class="cn" placeholder="หมายเหตุปิดงาน (ถ้ามี)" aria-label="หมายเหตุปิดงาน"><button type="button" class="ghost" data-close="${esc(l.id)}">ปิดงาน ✓</button></div>`)).join(''):'<div class="empty">ไม่มีงานค้าง</div>'}</div></section>`;
+  $$('[data-close]').forEach(b=>b.onclick=()=>{b.disabled=true;const f=mtFac;
+    run('mtClose',b.dataset.close,b.parentElement.querySelector('.cn').value.trim()).then(d=>{if(f!==mtFac)return;MT=d;toast('ปิดงานแล้ว ✓');mtDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+}
+function mtHist(){
+  const L=MT.logs.filter(l=>!mtHistM||l.machine===mtHistM);
+  const dn=L.reduce((a,l)=>a+l.down,0);
+  $('#mt').innerHTML=`<section class="panel"><div class="field"><label for="mhm">เครื่องจักร</label><select id="mhm"><option value="">ทุกเครื่อง</option>${MT.machines.map(m=>`<option${m.name===mtHistM?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
+  <div class="hint">${L.length} รายการ • หยุดเครื่องรวม ${fmt(dn)} นาที${MT.total>MT.logs.length?' • แสดง '+MT.logs.length+' รายการล่าสุด (ทั้งหมดอยู่ในชีต)':''}</div>
+  <div class="list">${L.length?L.slice(0,150).map(l=>mtEntry(l)).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></section>`;
+  $('#mhm').onchange=()=>{mtHistM=$('#mhm').value;mtHist();};
+}
+function mtDown(){
+  const M=MT.down.months, rows=MT.down.rows.map(r=>({...r,t:r.m.reduce((a,b)=>a+b,0)})).sort((a,b)=>b.m[M.length-1]-a.m[M.length-1]||b.t-a.t);
+  const ml=k=>new Date(k+'-01T00:00').toLocaleDateString('th-TH',{month:'short'});
+  const tot=M.map((_,i)=>rows.reduce((a,r)=>a+r.m[i],0));
+  $('#mt').innerHTML=`<section class="panel"><h3>เวลาหยุดเครื่องรายเดือน (นาที)</h3>${rows.length?`<div class="tbl"><table><thead><tr><th>เครื่องจักร</th>${M.map(k=>`<th>${ml(k)}</th>`).join('')}<th>รวม</th></tr></thead><tbody>
+  ${rows.map(r=>`<tr><td>${esc(r.machine)}</td>${r.m.map(v=>`<td class="num">${v?fmt(v):'–'}</td>`).join('')}<td class="num"><b>${fmt(r.t)}</b></td></tr>`).join('')}
+  <tr><td><b>รวมทุกเครื่อง</b></td>${tot.map(v=>`<td class="num"><b>${v?fmt(v):'–'}</b></td>`).join('')}<td class="num"><b>${fmt(tot.reduce((a,b)=>a+b,0))}</b></td></tr></tbody></table></div>
+  <p class="hint">6 เดือนล่าสุด • เรียงจากเครื่องที่หยุดมากที่สุดในเดือนนี้ • นับทุกประเภทงานที่กรอกนาทีหยุดเครื่อง</p>`:'<div class="empty">ยังไม่มีการหยุดเครื่องใน 6 เดือนนี้</div>'}</section>`;
+}
+/* แบบฟอร์มบันทึกงาน */
+function mtForm(pre){
+  const now=new Date(), hm=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>บันทึกงานซ่อมบำรุง</h2></div>
+  <form id="mf" novalidate><section class="panel"><div class="grid2 keep"><div class="field"><label for="md">วันที่</label><input type="date" id="md" value="${MT.today}" max="${MT.today}"></div>
+  <div class="field"><label for="mtm">เวลา</label><input type="time" id="mtm" value="${hm}"></div></div>
+  <div class="field"><label for="mm">เครื่องจักร</label><select id="mm"><option value="">เลือกเครื่องจักร</option>${MT.machines.map(m=>`<option${m.name===pre.machine?' selected':''}>${esc(m.name)}</option>`).join('')}</select></div>
+  <div class="field" id="muF" hidden><label for="mu">เครื่องที่</label><select id="mu"></select></div>
+  <div class="field"><span class="lbl">ประเภทงาน</span>${seg('mtype',MT.types,pre.type||'')}</div></section>
+  <section class="panel" id="mpmP" hidden><h3>งาน PM ที่ทำ</h3><div id="mpm" class="list"></div></section>
+  <section class="panel" id="mckP" hidden><h3>รายการตรวจบังคับ</h3><div class="hint">ต้องกรอกทุกข้อ • ถ้ามีข้อ "ไม่ผ่าน" ให้เลือกสถานะ รอติดตาม</div><div id="mck" class="list"></div></section>
+  <section class="panel"><div class="field"><label for="mp">ปัญหา / อาการ <span class="opt" id="mpO">(ถ้ามี)</span></label><textarea id="mp"></textarea></div>
+  <div class="field"><label for="ma">สิ่งที่ทำ / การแก้ไข</label><textarea id="ma"></textarea></div>
+  <div class="field"><label for="mpt">อะไหล่ที่เปลี่ยน <span class="opt">(ถ้ามี)</span></label><input id="mpt"></div>
+  <div class="grid2 keep"><div class="field"><label for="mdn">หยุดเครื่อง (นาที)</label><input id="mdn" class="num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+  <div class="field"><label for="mw">ผู้ทำ</label><input id="mw" value="${esc(B.user.name)}"></div></div>
+  <div class="field"><span class="lbl">สถานะ</span>${seg('mst',MT.statuses,'เสร็จ')}</div></section>
+  <div class="err" id="merr" hidden></div><button type="submit" class="primary" id="msave">บันทึก</button></form>`;
+  $('#back').onclick=fMaint;
+  const mach=()=>MT.machines.find(m=>m.name===$('#mm').value);
+  const type=()=>segVal(null,'mtype');
+  const sync=()=>{const m=mach(),t=type();
+    $('#muF').hidden=!m||m.units<2;
+    if(m){const cur=$('#mu').value||pre.unit||1;$('#mu').innerHTML=Array.from({length:m.units},(_,i)=>`<option${i+1==cur?' selected':''}>${i+1}</option>`).join('');}
+    const tasks=m?MT.tasks.filter(x=>x.machine===m.name):[];
+    $('#mpmP').hidden=!(m&&t==='PM ตามแผน');
+    const had=$$('#mpm input:checked').map(x=>x.value).concat(pre.pm||[]);
+    $('#mpm').innerHTML=tasks.length?tasks.map(x=>`<label class="mtck"><input type="checkbox" value="${esc(x.code)}"${had.includes(x.code)?' checked':''}><span>${esc(x.task)} <span class="opt">(${mtFreq(x.freq)})</span></span></label>`).join(''):'<div class="empty">เครื่องนี้ยังไม่มีแผน PM ในชีต</div>';
+    const ck=m&&t&&t!=='ทำความสะอาด'?(MT.checks[m.name]||[]):[];
+    $('#mckP').hidden=!ck.length;
+    if($('#mck').dataset.m!==(m?m.name:'')+'|'+ck.length){$('#mck').dataset.m=(m?m.name:'')+'|'+ck.length;
+      $('#mck').innerHTML=ck.map((c,i)=>c.type==='num'?`<div class="field"><label for="ck${i}">${esc(c.label)}${c.unit?' <span class="opt">('+esc(c.unit)+')</span>':''}</label><input id="ck${i}" class="num ckv" data-l="${esc(c.label)}" type="number" inputmode="decimal" min="0" step="0.01"></div>`
+        :`<div class="field ckpf" data-l="${esc(c.label)}"><span class="lbl">${esc(c.label)}</span>${seg('ck'+i,['ผ่าน','ไม่ผ่าน'],'')}</div>`).join('');}
+    $('#mpO').textContent=t==='ซ่อมเมื่อเสีย'?'':'(ถ้ามี)';
+  };
+  $('#mm').onchange=()=>{pre.pm=[];$$('#mpm input').forEach(x=>x.checked=false);sync();};
+  $('[data-seg="mtype"]').addEventListener('segchange',sync);
+  sync(); pre.pm=[]; window.scrollTo(0,0);
+  $('#mf').onsubmit=e=>{e.preventDefault();
+    const m=mach(),t=type(),errs=[],checks={};
+    if(!m)errs.push('เลือกเครื่องจักร');if(!t)errs.push('เลือกประเภทงาน');
+    const pm=$('#mpmP').hidden?[]:$$('#mpm input:checked').map(x=>x.value);
+    if(m&&t==='PM ตามแผน'&&!pm.length)errs.push('เลือกงาน PM ที่ทำอย่างน้อย 1 งาน');
+    if(t==='ซ่อมเมื่อเสีย'&&!val(null,'#mp'))errs.push('กรอกปัญหา / อาการ');
+    if(!val(null,'#ma'))errs.push('กรอกสิ่งที่ทำ / การแก้ไข');
+    const dn=val(null,'#mdn');if(dn!==''&&!(Number(dn)>=0))errs.push('นาทีที่หยุดเครื่องไม่ถูกต้อง');
+    if(t==='ซ่อมเมื่อเสีย'&&dn==='')errs.push('กรอกนาทีที่หยุดเครื่อง (ไม่หยุด ใส่ 0)');
+    const st=segVal(null,'mst');let fail=false;
+    if(!$('#mckP').hidden){$$('#mck .ckv').forEach(x=>{if(x.value.trim()==='')errs.push('รายการตรวจบังคับ: '+x.dataset.l);else checks[x.dataset.l]=x.value.trim();});
+      $$('#mck .ckpf').forEach(f=>{const b=f.querySelector('[aria-pressed="true"]');if(!b)errs.push('รายการตรวจบังคับ: '+f.dataset.l);else{checks[f.dataset.l]=b.dataset.v;if(b.dataset.v==='ไม่ผ่าน')fail=true;}});}
+    if(fail&&st!=='รอติดตาม')errs.push('มีรายการตรวจที่ไม่ผ่าน ให้เลือกสถานะ "รอติดตาม"');
+    const er=$('#merr');
+    if(errs.length){er.innerHTML=errs.map(esc).join('<br>');er.hidden=false;er.scrollIntoView({behavior:'smooth',block:'center'});return;}
+    er.hidden=true;const btn=$('#msave');btn.disabled=true;btn.textContent='กำลังบันทึก…';
+    run('mtSave',{factory:MT.fac,date:val(null,'#md'),time:val(null,'#mtm'),machine:m.name,unit:m.units>1?Number($('#mu').value):1,type:t,pm:pm,problem:val(null,'#mp'),action:val(null,'#ma'),parts:val(null,'#mpt'),down:dn,who:val(null,'#mw'),status:st,checks:checks})
+      .then(d=>{MT=d;mtFac=d.fac;toast('บันทึกแล้ว ✓');if(st==='รอติดตาม')mtView='open';fMaint();})
+      .catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);btn.disabled=false;btn.textContent='บันทึก';});
+  };
+}
+
+/* ---------- แก้ไขรายการย้อนหลัง 7 วัน ---------- */
+let histRows=[], editing=null, voidArm=false;
+function openEdit(r){
+  if(!r)return;
+  editing=null; voidArm=false;
+  $('#ovEHead').textContent='กำลังโหลด…'; $('#ovEBody').innerHTML=''; $('#ovEErr').hidden=true;
+  $('#ovEVoid').textContent='ยกเลิกรายการนี้ (ตั้งยอดเป็น 0)'; $('#ovEVoid').hidden=false;
+  $('#ovESave').hidden=false; $('#ovE').hidden=false;
+  run('getEntryForEdit',r.tab,r.id).then(d=>{
+    editing=d;
+    $('#ovEHead').innerHTML=`<b>${esc(d.title)}</b> • ${esc(d.kind)} • ${esc(d.dateText)}${d.detail?'<br>'+esc(d.detail):''}`;
+    $('#ovEBody').innerHTML=d.fields.map(f=>`<div class="field"><label for="ef_${esc(f.k)}">${esc(f.label)}${f.unit?' <span class="opt">('+esc(f.unit)+')</span>':''}</label><input id="ef_${esc(f.k)}" class="num ef" data-k="${esc(f.k)}" type="number" inputmode="decimal" min="0" step="${f.int?'1':'0.01'}" value="${f.v===''||f.v==null?'':esc(f.v)}"></div>`).join('')
+      +(d.children&&d.children.length?'<span class="lbl">ปลาที่ใช้จริง</span>'+d.children.map(c=>`<div class="qrow"><span>${esc(c.item)}</span><input class="num ec" data-id="${esc(c.id)}" type="number" inputmode="decimal" min="0" step="0.01" value="${c.qty===''||c.qty==null?'':esc(c.qty)}"><span class="u">${esc(c.unit||'กก.')}</span></div>`).join(''):'')
+      +`<div class="field"><label for="ef_note">หมายเหตุ</label><textarea id="ef_note">${esc(d.note||'')}</textarea></div>`
+      +'<p class="hint">แก้ได้เฉพาะตัวเลขและหมายเหตุ • ถ้าเลือกรายการ/สินค้า/สถานที่ผิด ให้กดยกเลิกรายการนี้ แล้วบันทึกเข้าใหม่</p>';
+  }).catch(e=>{$('#ovEHead').textContent='';$('#ovESave').hidden=true;$('#ovEVoid').hidden=true;$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;});
+}
+function editVals(){
+  const fields={}; $$('#ovEBody .ef').forEach(x=>fields[x.dataset.k]=x.value.trim());
+  return {fields,children:$$('#ovEBody .ec').map(x=>({id:x.dataset.id,qty:x.value.trim()})),note:val(null,'#ef_note')};
+}
+function sendEdit(voidIt){
+  if(!editing)return;
+  const btn=voidIt?$('#ovEVoid'):$('#ovESave'), t=btn.textContent;
+  btn.disabled=true; btn.textContent='กำลังบันทึก…'; $('#ovEErr').hidden=true;
+  run('updateEntry',editing.tab,editing.id,editVals(),!!voidIt).then(res=>{
+    $('#ovE').hidden=true; B.recent=res.recent||B.recent;
+    toast(voidIt?'ยกเลิกรายการแล้ว ✓':'แก้ไขแล้ว ✓'); fHist();
+  }).catch(e=>{$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;})
+   .finally(()=>{btn.disabled=false;btn.textContent=t;});
+}
+$('#ovECancel').onclick=()=>$('#ovE').hidden=true;
+$('#ovESave').onclick=()=>sendEdit(false);
+$('#ovEVoid').onclick=()=>{
+  if(!voidArm){voidArm=true;$('#ovEVoid').textContent='กดอีกครั้งเพื่อยืนยันยกเลิกรายการนี้';return;}
+  voidArm=false; sendEdit(true);
+};
+/* ---------- review + submit ---------- */
+let current=null;
+function review(kind){
+  const r=pending(); const e=$('#err');
+  const back=dateBack();
+  if(back==null)r.errs.unshift('เลือกวันที่');
+  else if(back<0)r.errs.unshift('วันที่เป็นวันในอนาคต ตรวจสอบวันที่อีกครั้ง');
+  else if(back>DATE_MAX_BACK&&!B.isAdmin)r.errs.unshift('วันที่ย้อนหลัง '+back+' วัน (เกิน '+DATE_MAX_BACK+' วัน) — ตรวจสอบว่าวัน/เดือนไม่สลับกัน ถ้าต้องบันทึกย้อนหลังจริง ให้แจ้งออฟฟิศ');
+  if(r.errs.length){e.innerHTML=r.errs.map(esc).join('<br>');e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  e.hidden=true; r.payload.date=val(null,'#date'); r.payload.factory=factory; current={kind,payload:r.payload};
+  $('#ovHead').textContent=new Date(r.payload.date+'T00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})+' • '+factory+' • '+r.head+(back>0?' • ⚠ ย้อนหลัง '+back+' วัน':'');
+  $('#ovList').innerHTML=r.sum.map(s=>`<div class="sum-row"><div><b>${esc(s[0])}</b><small>${esc(s[1])}</small></div><b class="num">${esc(s[2])}</b></div>`).join('');
+  $('#ov').hidden=false; $('#ovOk').disabled=false; $('#ovOk').focus();
+}
+$('#ovBack').onclick=()=>$('#ov').hidden=true;
+$('#ovOk').onclick=()=>{
+  $('#ovOk').disabled=true; $('#ovOk').textContent='กำลังบันทึก…';
+  run('submit',current.kind,current.payload).then(res=>{
+    $('#ov').hidden=true; B.recent=res.recent||B.recent; toast('บันทึกแล้ว ✓'); home();
+  }).catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);}).finally(()=>{$('#ovOk').disabled=false;$('#ovOk').textContent='ยืนยันบันทึก';});
+};
+})();
+</script>
+</body>
+</html>
