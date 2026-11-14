@@ -447,14 +447,35 @@ function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,lab
 /* ---------- รับเข้า ---------- */
 function fReceive(){
   let photoData='';
-  shell('receive',`<section class="panel"><div class="field"><span class="lbl">รับอะไร</span>${seg('mode',[['fish','ปลาสด'],['mat','วัตถุดิบ / บรรจุภัณฑ์ / อื่นๆ']],'fish')}</div>
-    <div class="grid2"><div class="field"><label for="sup">ผู้ขาย</label><select id="sup"></select></div>
+  factory=factory==='สุภาภรณ์'?'สุภาภรณ์':'J&N';
+  shell('receive',`<section class="panel"><div class="field"><span class="lbl">ต้นทาง (ของมาจากไหน)</span>${seg('src',[['ผู้ขาย','ผู้ขาย (Supplier)'],['สุภาภรณ์','สุภาภรณ์'],['อื่นๆ','อื่นๆ']],'ผู้ขาย')}</div>
+    <div class="field" id="srcOF" hidden><label for="srcO">ระบุต้นทาง</label><input id="srcO" maxlength="60" placeholder="เช่น ชื่อร้าน / สถานที่"></div>
+    <div class="field"><span class="lbl">ปลายทาง (ของเข้าที่ไหน)</span>${seg('dst',[['J&N','คลัง J&N'],['สุภาภรณ์','สุภาภรณ์'],['อื่นๆ','อื่นๆ']],factory)}</div>
+    <div class="field" id="dstOF" hidden><label for="dstO">ระบุปลายทาง <span class="opt">(นับเป็นสต๊อก J&amp;N)</span></label><input id="dstO" maxlength="60" placeholder="เช่น ชื่อสถานที่"></div>
+    <div class="hint" id="sdHint"></div>
+    <div class="field"><span class="lbl">รับอะไร</span>${seg('mode',[['fish','ปลาสด'],['mat','วัตถุดิบ / บรรจุภัณฑ์ / อื่นๆ'],['fg','สินค้าสำเร็จรูป (ปลากระป๋อง)']],'fish')}</div>
+    <div class="grid2"><div class="field" id="supF"><label for="sup">ผู้ขาย</label><select id="sup"></select></div>
     <div class="field"><label for="doc">เลขที่เอกสาร / ใบชั่ง <span class="opt">(ถ้ามี)</span></label><input id="doc"></div></div>
     <div class="field"><label for="photo">รูปใบส่งของ <span class="opt">(ถ้ามี)</span></label><input id="photo" type="file" accept="image/*" capture="environment"><img id="photoPrev" alt="รูปใบส่งของ" hidden style="max-height:140px;border-radius:8px;border:1px solid var(--line);justify-self:start"></div></section>
-    <section class="panel"><h3>รายการ</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการ (ผู้ขายเดียวกัน)</button>
+    <section class="panel"><h3>รายการ</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการ (ต้นทางเดียวกัน)</button>
     <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
     <div class="total"><span id="tSub">รวม</span><b class="num" id="tVal">0</b></div></section>`);
   const mode=()=>segVal(null,'mode');
+  const srcV=()=>segVal(null,'src'), dstV=()=>segVal(null,'dst'), xfer=()=>srcV()==='สุภาภรณ์';
+  const SP='สุภาภรณ์', spLocs=t=>M().locations.filter(l=>l.factory===SP&&l.type===t).map(l=>l.name);
+  const fromFish=()=>seg('from',[...spLocs('ห้องเย็น'),[LINE,'ไลน์ผลิต สุภาภรณ์']],spLocs('ห้องเย็น')[0]||LINE);
+  const fgBtn=()=>$('[data-seg="mode"] [data-v="fg"]');
+  const sdSync=()=>{
+    $('[data-seg="factory"]').closest('.field').hidden=true;
+    const sv=srcV(),dv=dstV();
+    $('#srcOF').hidden=sv!=='อื่นๆ';$('#dstOF').hidden=dv!=='อื่นๆ';$('#supF').hidden=sv!=='ผู้ขาย';
+    fgBtn().hidden=!xfer();
+    if(!xfer()&&mode()==='fg'){$$('[data-seg="mode"] button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.v==='fish'));}
+    const h=$('#sdHint');
+    if(xfer()&&dv===SP){h.textContent='ต้นทางและปลายทางเป็นสุภาภรณ์ทั้งคู่ไม่ได้ — เลือกปลายทางใหม่';h.className='hint warn';}
+    else if(xfer()){h.textContent='ย้ายระหว่างโรงงาน: ระบบตัดสต๊อกสุภาภรณ์ และเพิ่มสต๊อก J&N ให้อัตโนมัติ';h.className='hint';}
+    else h.textContent='';
+  };
   const setSup=()=>{const fish=mode()==='fish';$('#sup').innerHTML='<option value="">เลือกผู้ขาย</option>'+M().suppliers.filter(s=>fish?s.cat==='ปลา':s.cat!=='ปลา').map(s=>`<option>${esc(s.name)}</option>`).join('');};
   const destFish=()=>seg('dest',[...coldLocs(),[LINE,'เข้าไลน์ผลิตตรง']],coldLocs()[0]);
   const destMat=()=>seg('dest',[storeLoc(),[LINE,'เข้าไลน์ผลิตตรง']],storeLoc());
@@ -462,27 +483,35 @@ function fReceive(){
     if(mode()==='fish'){
       addLine('#lines',`<div class="grid2 keep"><div class="field"><label>ชนิดปลา</label><select class="sp"><option value="">เลือกชนิดปลา</option>${species().map(s=>`<option>${esc(s)}</option>`).join('')}</select></div>
       <div class="field"><span class="lbl">รูปแบบ</span>${seg('form',['ปลาตัว','ปลาตัด'],'')}</div></div>
-      <div class="field"><span class="lbl">ปลายทาง</span><div class="dw">${destFish()}</div></div>
+      ${xfer()?`<div class="field"><span class="lbl">เอาออกจาก (สุภาภรณ์)</span>${fromFish()}</div>`:''}
+      <div class="field"><span class="lbl">เก็บที่</span><div class="dw">${destFish()}</div></div>
       <div class="grid2 keep"><div class="field"><label>จำนวนกระบะ</label><input class="crates num" type="number" inputmode="numeric" min="0" step="1"></div>
-      <div class="field"><label>น้ำหนัก (กก.)</label><input class="kg num" type="number" inputmode="decimal" min="0" step="0.01"></div></div><div class="field"><label>ราคา/กก. (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div><div class="hint avg"></div>`,'ปลาชนิดที่');
+      <div class="field"><label>น้ำหนัก (กก.)</label><input class="kg num" type="number" inputmode="decimal" min="0" step="0.01"></div></div><div class="field prf"><label>ราคา/กก. (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div><div class="hint avg"></div>`,'ปลาชนิดที่');
+    }else if(mode()==='fg'){
+      addLine('#lines',`<div class="field"><label>สินค้า (SKU)</label><select class="sku">${skuOptions()}</select></div>
+      <div class="field"><span class="lbl">จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะที่ย้าย)</span></span><div class="szgrid">${SIZES.map(z=>`<label class="szc"><span>${z[1]}</span><input class="fgz num" data-z="${z[0]}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}<label class="szc"><span>กระป๋องหลวม (กป)</span><input class="fgz num" data-z="1" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label></div>
+      <div class="hint">เฉพาะกระป๋องที่<b>ติดฉลากแล้ว</b> (ในกล่อง หรือหลวม)</div></div>`,'สินค้าที่');
     }else{
       const d=addLine('#lines',`<div class="field"><label>รายการ</label><select class="it">${itemOptions(otherItems(),'เลือกรายการ')}</select></div>
-      <div class="field"><span class="lbl">ปลายทาง</span><div class="dw">${destMat()}</div></div>
+      <div class="field"><span class="lbl">เก็บที่</span><div class="dw">${destMat()}</div></div>
       <div class="grid2 keep"><div class="field"><label>จำนวน <span class="unit opt"></span></label><input class="qty num" type="number" inputmode="decimal" min="0" step="0.01"></div>
       <div class="field basef"><label>รวมทั้งหมด <span class="bunit opt"></span></label><input class="base num" type="number" inputmode="decimal" min="0" step="0.01"></div></div>
       <div class="hint conv"></div>
-      <div class="field"><label>ราคาต่อ<span class="punit">หน่วย</span> (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div>
+      <div class="field prf"><label>ราคาต่อ<span class="punit">หน่วย</span> (บาท) <span class="opt">(ถ้ามี)</span></label><input class="price num" type="number" inputmode="decimal" min="0" step="0.01"></div>
       <div class="grid2 keep lotrow"><div class="field"><label>Lot <span class="opt">(ถ้ามี)</span></label><input class="lot"></div><div class="field"><label>วันหมดอายุ <span class="opt">(ถ้ามี)</span></label><input class="exp" type="date"></div></div>`,'รายการที่');
       d.querySelector('.it').onchange=()=>matInfo(d);
     }
   };
   const matInfo=d=>{const it=itemBy(d.querySelector('.it').value);d.querySelector('.punit').textContent=it?it.unit:'หน่วย';d.querySelector('.unit').textContent=it?'('+it.unit+')':'';d.querySelector('.bunit').textContent=it?'('+it.base+' จากใบส่งของ)':'';
     d.querySelector('.basef').hidden=!it||!!it.pack; d.querySelector('.lotrow').hidden=!it||it.cat!=='วัตถุดิบ'; totals();};
-  const reset=()=>{setSup();$('#lines').innerHTML='';add();totals();};
+  const reset=()=>{sdSync();setSup();$('#lines').innerHTML='';add();$$('#lines .prf').forEach(x=>x.hidden=xfer());totals();};
   refreshLocs=()=>$$('#lines .dw').forEach(w=>w.innerHTML=mode()==='fish'?destFish():destMat());
   $('[data-seg="mode"]').addEventListener('segchange',reset);
-  $('#add').onclick=add; $('#lines').addEventListener('input',totals);
+  $('[data-seg="src"]').addEventListener('segchange',reset);
+  $('[data-seg="dst"]').addEventListener('segchange',e=>{factory=e.detail===SP?SP:'J&N';refreshLocs();sdSync();});
+  $('#add').onclick=()=>{add();$$('#lines .prf').forEach(x=>x.hidden=xfer());}; $('#lines').addEventListener('input',totals);
   function totals(){
+    if(mode()==='fg'){let c=0;$$('#lines .fgz').forEach(x=>c+=(n(x.value.trim())||0)*Number(x.dataset.z));$('#tSub').textContent='รวม';$('#tVal').textContent=fmt(c)+' กป';return;}
     if(mode()==='fish'){let c=0,k=0;$$('#lines .item').forEach(d=>{const cr=n(val(d,'.crates')),kg=n(val(d,'.kg'));c+=cr||0;k+=kg||0;const a=d.querySelector('.avg');
       if(cr&&kg){const per=kg/cr;a.textContent='เฉลี่ย '+per.toFixed(1)+' กก./กระบะ'+(per<10||per>40?' • ตัวเลขดูผิดปกติ ลองเช็กอีกครั้ง':'');a.className='hint avg'+(per<10||per>40?' warn':'');}else a.textContent='';});
       $('#tSub').textContent='รวม '+fmt(c)+' กระบะ';$('#tVal').textContent=fmt(k,2)+' กก.';}
@@ -493,19 +522,27 @@ function fReceive(){
   $('#photo').onchange=async()=>{const f=$('#photo').files[0];if(!f){photoData='';$('#photoPrev').hidden=true;return;}try{photoData=await shrink(f);$('#photoPrev').src=photoData;$('#photoPrev').hidden=false;}catch(e){photoData='';toast(e.message,true);}};
   reset();
   pending=()=>{
-    const fish=mode()==='fish',sup=val(null,'#sup'),lines=[],sum=[],errs=[];
-    if(!sup)errs.push('เลือกผู้ขาย');
+    const fish=mode()==='fish',isFg=mode()==='fg',sv=srcV(),dv=dstV(),x=xfer(),sup=sv==='ผู้ขาย'?val(null,'#sup'):'',srcO=val(null,'#srcO'),dstO=val(null,'#dstO'),lines=[],fg=[],sum=[],errs=[];
+    if(sv==='ผู้ขาย'&&!sup)errs.push('เลือกผู้ขาย');
+    if(sv==='อื่นๆ'&&!srcO)errs.push('ระบุต้นทาง');
+    if(dv==='อื่นๆ'&&!dstO)errs.push('ระบุปลายทาง');
+    if(x&&dv===SP)errs.push('ต้นทางและปลายทางเป็นสุภาภรณ์ทั้งคู่ไม่ได้');
+    if(isFg&&!x)errs.push('สินค้าสำเร็จรูป ใช้ได้เมื่อต้นทาง = สุภาภรณ์');
     $$('#lines .item').forEach((d,i)=>{
+      if(isFg){const s=val(d,'.sku');if(!s){errs.push(`สินค้าที่ ${i+1}: เลือกสินค้า`);return;}let k=0;
+        $$('.fgz',d).forEach(z=>{const b=n(z.value.trim());if(!(b>0))return;if(b%1){errs.push(`สินค้าที่ ${i+1}: จำนวนต้องเป็นจำนวนเต็ม`);return;}k++;fg.push({sku:s,size:z.dataset.z,boxes:b});sum.push([s,z.dataset.z==='1'?'กระป๋องหลวม':'กล่อง '+z.dataset.z,fmt(b)+(z.dataset.z==='1'?' กป':' กล่อง')]);});
+        if(!k)errs.push(`สินค้าที่ ${i+1}: กรอกจำนวนอย่างน้อย 1 ช่อง`);return;}
       if(fish){const sp=val(d,'.sp'),fm=segVal(d,'form'),kg=n(val(d,'.kg')),cr=n(val(d,'.crates')),loc=segVal(d,'dest');
         if(!sp||!fm||!(kg>0)||!(cr>=0)){errs.push(`ปลาชนิดที่ ${i+1}: เลือกชนิด รูปแบบ (ตัว/ตัด) และกรอกกระบะ + น้ำหนัก`);return;}
-        const item=sp+' ('+fm+')';const pr=val(d,'.price');lines.push({item,loc,kg,crates:cr,price:pr});sum.push([item,(loc===LINE?'เข้าไลน์ผลิตตรง':loc)+' • '+fmt(cr)+' กระบะ'+(pr?' • '+fmt(pr,2)+' บ./กก.':''),fmt(kg,2)+' กก.']);}
+        const item=sp+' ('+fm+')';const pr=x?'':val(d,'.price');lines.push({item,loc,kg,crates:cr,price:pr,fromLoc:x?segVal(d,'from'):''});sum.push([item,(loc===LINE?'เข้าไลน์ผลิตตรง':loc)+' • '+fmt(cr)+' กระบะ'+(pr?' • '+fmt(pr,2)+' บ./กก.':''),fmt(kg,2)+' กก.']);}
       else{const it=itemBy(val(d,'.it')),q=n(val(d,'.qty')),b=n(val(d,'.base')),loc=segVal(d,'dest');
         if(!it||!(q>0)){errs.push(`รายการที่ ${i+1}: เลือกรายการและกรอกจำนวน`);return;}
         if(!it.pack&&!(b>0)){errs.push(`รายการที่ ${i+1}: กรอกจำนวนรวม (${it.base}) จากใบส่งของ`);return;}
-        const base=it.pack?q*it.pack:b;const pr=val(d,'.price');lines.push({item:it.name,loc,qty:q,base,lot:val(d,'.lot'),exp:val(d,'.exp'),price:pr});
+        const base=it.pack?q*it.pack:b;const pr=x?'':val(d,'.price');lines.push({item:it.name,loc,qty:q,base,lot:val(d,'.lot'),exp:val(d,'.exp'),price:pr});
         sum.push([it.name,(loc===LINE?'เข้าไลน์ผลิตตรง':loc)+' • '+fmt(q)+' '+it.unit+(pr?' • '+fmt(pr,2)+' บ./'+it.unit:''),fmt(base)+' '+it.base]);}
     });
-    return {errs,sum,head:sup+(val(null,'#doc')?' • เอกสาร '+val(null,'#doc'):'')+(photoData?' • มีรูปใบส่งของ':''),payload:{supplier:sup,doc:val(null,'#doc'),note:val(null,'#note'),photo:photoData,lines}};
+    const srcName=sv==='ผู้ขาย'?sup:x?SP:'อื่นๆ: '+srcO, dstName=dv==='อื่นๆ'?'อื่นๆ: '+dstO:dv===SP?SP:'คลัง J&N';
+    return {errs,sum,head:srcName+' → '+dstName+(x?' • ย้ายระหว่างโรงงาน':'')+(val(null,'#doc')?' • เอกสาร '+val(null,'#doc'):'')+(photoData?' • มีรูปใบส่งของ':''),payload:{source:sv,sourceOther:sv==='อื่นๆ'?srcO:'',destOther:dv==='อื่นๆ'?dstO:'',supplier:sup,doc:val(null,'#doc'),note:val(null,'#note'),photo:photoData,lines,fg}};
   };
 }
 
