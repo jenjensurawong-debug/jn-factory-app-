@@ -417,6 +417,7 @@ function fHist(){
 /* ---------- form shell ---------- */
 const TITLES=Object.fromEntries(TILES.map(t=>[t[0],t[1]]));
 function shell(kind,body,extraTop){
+  dayAsked=false;
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${TITLES[kind]}</h2></div>
   <form id="f" novalidate><section class="panel">
     <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"><div class="hint" id="dateTh"></div></div>
@@ -431,6 +432,23 @@ function shell(kind,body,extraTop){
 let refreshLocs=()=>{};
 /* date safeguard: show the chosen date in Thai words; block dates that look like a day/month mix-up */
 const DATE_MAX_BACK=31;
+/* morning check: work saved before noon with today's date is usually yesterday's (production, labels, boxes, usage) */
+const DAY_ASK_KINDS=['produce','label','box','use'], DAY_ASK_HOUR=12;
+let dayAsked=false;
+function bkkHour(){try{return Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Bangkok',hour:'2-digit',hour12:false}).format(new Date()))%24;}catch(e){return new Date().getHours();}}
+function isoDay(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+function yesterdayISO(){const d=new Date(B.today+'T00:00');d.setDate(d.getDate()-1);return isoDay(d);}
+function dm(iso){const d=new Date(iso+'T00:00');return d.getDate()+'/'+(d.getMonth()+1);}
+function thDay(iso){return new Date(iso+'T00:00').toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long'});}
+function askDay(kind){
+  const e=$('#err'), y=yesterdayISO();
+  e.innerHTML='<b>งานนี้เป็นของเมื่อวานหรือเปล่า?</b><br>ตอนนี้ยังเช้าอยู่ แต่วันที่ที่เลือกคือ <b>วันนี้</b> ('+esc(thDay(B.today))+')'
+    +'<div class="btns" style="margin-top:10px"><button type="button" class="primary" id="dayY">ใช่ งานเมื่อวาน ('+esc(dm(y))+')</button>'
+    +'<button type="button" class="ghost" id="dayT">ไม่ใช่ งานวันนี้</button></div>';
+  e.hidden=false; e.scrollIntoView({behavior:'smooth',block:'center'});
+  $('#dayY').onclick=()=>{$('#date').value=y;dateHint();dayAsked=true;e.hidden=true;review(kind);};
+  $('#dayT').onclick=()=>{dayAsked=true;e.hidden=true;review(kind);};
+}
 function dateBack(){const v=val(null,'#date');if(!/^\d{4}-\d{2}-\d{2}$/.test(v))return null;return Math.round((new Date(B.today+'T00:00')-new Date(v+'T00:00'))/864e5);}
 function dateHint(){const el=$('#dateTh');if(!el)return;const n=dateBack();
   if(n==null){el.textContent='กรุณาเลือกวันที่';el.className='hint warn';return;}
@@ -868,15 +886,24 @@ function openEdit(r){
   run('getEntryForEdit',r.tab,r.id).then(d=>{
     editing=d;
     $('#ovEHead').innerHTML=`<b>${esc(d.title)}</b> • ${esc(d.kind)} • ${esc(d.dateText)}${d.detail?'<br>'+esc(d.detail):''}`;
-    $('#ovEBody').innerHTML=d.fields.map(f=>`<div class="field"><label for="ef_${esc(f.k)}">${esc(f.label)}${f.unit?' <span class="opt">('+esc(f.unit)+')</span>':''}</label><input id="ef_${esc(f.k)}" class="num ef" data-k="${esc(f.k)}" type="number" inputmode="decimal" min="0" step="${f.int?'1':'0.01'}" value="${f.v===''||f.v==null?'':esc(f.v)}"></div>`).join('')
+    const dateF=d.dateISO?`<div class="field"><label for="ef_date">วันที่ของงาน</label><input id="ef_date" type="date" value="${esc(d.dateISO)}" min="${esc(d.dateMin||'')}" max="${esc(d.dateMax||B.today)}"><div class="hint" id="ef_dateTh"></div></div>`:'';
+    $('#ovEBody').innerHTML=dateF+d.fields.map(f=>`<div class="field"><label for="ef_${esc(f.k)}">${esc(f.label)}${f.unit?' <span class="opt">('+esc(f.unit)+')</span>':''}</label><input id="ef_${esc(f.k)}" class="num ef" data-k="${esc(f.k)}" type="number" inputmode="decimal" min="0" step="${f.int?'1':'0.01'}" value="${f.v===''||f.v==null?'':esc(f.v)}"></div>`).join('')
       +(d.children&&d.children.length?'<span class="lbl">ปลาที่ใช้จริง</span>'+d.children.map(c=>`<div class="qrow"><span>${esc(c.item)}</span><input class="num ec" data-id="${esc(c.id)}" type="number" inputmode="decimal" min="0" step="0.01" value="${c.qty===''||c.qty==null?'':esc(c.qty)}"><span class="u">${esc(c.unit||'กก.')}</span></div>`).join(''):'')
       +`<div class="field"><label for="ef_note">หมายเหตุ</label><textarea id="ef_note">${esc(d.note||'')}</textarea></div>`
-      +'<p class="hint">แก้ได้เฉพาะตัวเลขและหมายเหตุ • ถ้าเลือกรายการ/สินค้า/สถานที่ผิด ให้กดยกเลิกรายการนี้ แล้วบันทึกเข้าใหม่</p>';
+      +'<p class="hint">แก้ได้ วันที่ ตัวเลข และหมายเหตุ • ถ้าเลือกรายการ/สินค้า/สถานที่ผิด ให้กดยกเลิกรายการนี้ แล้วบันทึกเข้าใหม่</p>';
+    const dIn=$('#ef_date');
+    if(dIn){const n=d.groupCount||1,hint=()=>{const h=$('#ef_dateTh');if(!h)return;
+        if(!dIn.value){h.textContent='กรุณาเลือกวันที่';h.className='hint warn';return;}
+        const ch=dIn.value!==d.dateISO;
+        h.textContent=thDay(dIn.value)+(ch?' • เปลี่ยนจาก '+thDay(d.dateISO)+(n>1?' (ย้ายทั้ง '+n+' รายการที่บันทึกพร้อมกัน)':''):'');
+        h.className='hint'+(ch?' warn':'');};
+      dIn.addEventListener('input',hint);dIn.addEventListener('change',hint);hint();}
   }).catch(e=>{$('#ovEHead').textContent='';$('#ovESave').hidden=true;$('#ovEVoid').hidden=true;$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;});
 }
 function editVals(){
   const fields={}; $$('#ovEBody .ef').forEach(x=>fields[x.dataset.k]=x.value.trim());
-  return {fields,children:$$('#ovEBody .ec').map(x=>({id:x.dataset.id,qty:x.value.trim()})),note:val(null,'#ef_note')};
+  const dIn=$('#ef_date');
+  return {fields,children:$$('#ovEBody .ec').map(x=>({id:x.dataset.id,qty:x.value.trim()})),note:val(null,'#ef_note'),date:dIn?dIn.value:''};
 }
 function sendEdit(voidIt){
   if(!editing)return;
@@ -884,7 +911,7 @@ function sendEdit(voidIt){
   btn.disabled=true; btn.textContent='กำลังบันทึก…'; $('#ovEErr').hidden=true;
   run('updateEntry',editing.tab,editing.id,editVals(),!!voidIt).then(res=>{
     $('#ovE').hidden=true; B.recent=res.recent||B.recent;
-    toast(voidIt?'ยกเลิกรายการแล้ว ✓':'แก้ไขแล้ว ✓'); fHist();
+    toast(voidIt?'ยกเลิกรายการแล้ว ✓':(res.moved?'แก้ไขแล้ว ✓ ย้ายวันที่ '+res.moved+' รายการ':'แก้ไขแล้ว ✓')); fHist();
   }).catch(e=>{$('#ovEErr').textContent=e&&e.message||e;$('#ovEErr').hidden=false;})
    .finally(()=>{btn.disabled=false;btn.textContent=t;});
 }
@@ -903,6 +930,7 @@ function review(kind){
   else if(back<0)r.errs.unshift('วันที่เป็นวันในอนาคต ตรวจสอบวันที่อีกครั้ง');
   else if(back>DATE_MAX_BACK&&!B.isAdmin)r.errs.unshift('วันที่ย้อนหลัง '+back+' วัน (เกิน '+DATE_MAX_BACK+' วัน) — ตรวจสอบว่าวัน/เดือนไม่สลับกัน ถ้าต้องบันทึกย้อนหลังจริง ให้แจ้งออฟฟิศ');
   if(r.errs.length){e.innerHTML=r.errs.map(esc).join('<br>');e.hidden=false;e.scrollIntoView({behavior:'smooth',block:'center'});return;}
+  if(back===0&&!dayAsked&&DAY_ASK_KINDS.indexOf(kind)>=0&&bkkHour()<DAY_ASK_HOUR){askDay(kind);return;}
   e.hidden=true; r.payload.date=val(null,'#date'); r.payload.factory=factory; current={kind,payload:r.payload};
   $('#ovHead').textContent=new Date(r.payload.date+'T00:00').toLocaleDateString('th-TH',{day:'numeric',month:'short',year:'numeric'})+' • '+factory+' • '+r.head+(back>0?' • ⚠ ย้อนหลัง '+back+' วัน':'');
   $('#ovList').innerHTML=r.sum.map(s=>`<div class="sum-row"><div><b>${esc(s[0])}</b><small>${esc(s[1])}</small></div><b class="num">${esc(s[2])}</b></div>`).join('');
