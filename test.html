@@ -589,11 +589,11 @@ function fMove(){
 
 /* ---------- ใช้จริงสิ้นวัน ---------- */
 function fUse(){
-  const quick=M().items.filter(i=>i.cat==='วัตถุดิบ'||i.name==='กระป๋อง'||i.name==='ฝากระป๋อง');
+  const quick=M().items.filter(i=>i.cat==='วัตถุดิบ'||i.name==='กระป๋อง'||i.name==='ฝากระป๋อง'||/^เทปใส/.test(i.name));
   shell('use',`<section class="panel"><div class="field"><span class="lbl">ประเภท</span>${seg('type',[['ใช้ผลิต','ใช้ผลิตจริง'],['ตัดเสีย','ตัดเสีย / ทิ้ง']],'ใช้ผลิต')}</div>
   <div class="field"><label for="from">ตัดจาก</label><select id="from"></select></div>
   <div class="warnbox">ปลา: บันทึกในหน้า <b>ผลิต</b> • ฉลากและกล่อง: ตัดอัตโนมัติจากหน้า <b>ติดฉลาก</b> และ <b>ลงกล่อง</b></div></section>
-  <section class="panel"><h3>วัตถุดิบซอส กระป๋อง ฝา</h3><div class="hint">กรอกเฉพาะที่ใช้วันนี้ ช่องว่าง = ไม่ได้ใช้</div>
+  <section class="panel"><h3>วัตถุดิบซอส กระป๋อง ฝา เทปใส</h3><div class="hint">กรอกเฉพาะที่ใช้วันนี้ ช่องว่าง = ไม่ได้ใช้</div>
   <div id="quick">${quick.map(i=>`<div class="qrow" data-item="${esc(i.name)}"><span>${esc(i.name)}</span><input class="num" type="number" inputmode="decimal" min="0" step="0.01" aria-label="${esc(i.name)}"><span class="u">${esc(i.base)}</span></div>`).join('')}</div>
   <h3>รายการอื่น</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการอื่น</button>
   <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
