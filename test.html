@@ -422,7 +422,7 @@ function shell(kind,body,extraTop){
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${TITLES[kind]}</h2></div>
   <form id="f" novalidate><section class="panel">
     <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"><div class="hint" id="dateTh"></div></div>
-    <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',['J&N','สุภาภรณ์'],factory)}</div></div>${extraTop||''}
+    <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',kind==='repack'?['J&N']:['J&N','สุภาภรณ์'],kind==='repack'?'J&N':factory)}</div></div>${extraTop||''}
   </section>${body}<div class="err" id="err" hidden></div><button type="submit" class="primary">ตรวจสอบและบันทึก</button></form>`;
   $('#back').onclick=home;
   $('#date').addEventListener('input',dateHint);$('#date').addEventListener('change',dateHint);dateHint();
@@ -680,6 +680,7 @@ function fBox(){
 /* ---------- แกะกล่อง / แพ็คใหม่ (กล่อง 100 ที่ลงระบบแล้ว -> กล่อง 20/40/50) ---------- */
 const RP_SIZES=[20,40,50];
 function fRepack(){
+  factory='J&N'; /* online orders ship from J&N only */
   shell('repack',`<section class="panel"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
   <div class="field"><label for="rq">แกะกล่อง 100 กี่กล่อง</label><input id="rq" class="num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
   <div class="hint">ใช้เมื่อกล่อง 100 ลงระบบไปแล้ว แต่ต้องแกะมาแพ็คเป็นกล่องเล็กสำหรับออเดอร์ออนไลน์ • ระบบลดสต๊อกกล่อง 100 และเพิ่มสต๊อกกล่องเล็กให้เอง ไม่ต้องลงกล่องซ้ำ</div></section>
