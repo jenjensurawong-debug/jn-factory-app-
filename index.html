@@ -350,6 +350,7 @@ const TILES=[
   ['use','ใช้จริงสิ้นวัน','ซอส กระป๋อง ฝา และอื่นๆ'],
   ['label','ติดฉลาก','ติดฉลากดี บุบ ฉลากเสีย'],
   ['box','ลงกล่อง','กล่องดีตามขนาด'],
+  ['repack','แกะกล่อง / แพ็คใหม่','แกะกล่อง 100 แพ็คเป็น 20/40/50'],
   ['dispatch','จ่ายออก','ส่งของ ช่องทางขาย ลูกค้า'],
   ['count','ตรวจนับสต๊อก','ยอดนับจริง ห้องเย็น/คลัง'],
   ['labor','ค่าแรง / OT','ยอดรวมค่าแรงและ OT รายวัน','lab'],
@@ -421,7 +422,7 @@ function shell(kind,body,extraTop){
   $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${TITLES[kind]}</h2></div>
   <form id="f" novalidate><section class="panel">
     <div class="grid2"><div class="field"><label for="date">วันที่</label><input type="date" id="date" value="${B.today}" max="${B.today}"><div class="hint" id="dateTh"></div></div>
-    <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',['J&N','สุภาภรณ์'],factory)}</div></div>${extraTop||''}
+    <div class="field"><span class="lbl">โรงงาน</span>${seg('factory',kind==='repack'?['J&N']:['J&N','สุภาภรณ์'],kind==='repack'?'J&N':factory)}</div></div>${extraTop||''}
   </section>${body}<div class="err" id="err" hidden></div><button type="submit" class="primary">ตรวจสอบและบันทึก</button></form>`;
   $('#back').onclick=home;
   $('#date').addEventListener('input',dateHint);$('#date').addEventListener('change',dateHint);dateHint();
@@ -460,7 +461,7 @@ function addLine(container,html,label){
   const rm=d.querySelector('.rm'); if(rm) rm.onclick=()=>{d.remove();$$('.item-head b',box).forEach((b,i)=>b.textContent=label+' '+(i+1));};
   box.appendChild(d); return d;
 }
-function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint})[k]();}
+function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,repack:fRepack,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint})[k]();}
 
 /* ---------- รับเข้า ---------- */
 function fReceive(){
@@ -588,11 +589,11 @@ function fMove(){
 
 /* ---------- ใช้จริงสิ้นวัน ---------- */
 function fUse(){
-  const quick=M().items.filter(i=>i.cat==='วัตถุดิบ'||i.name==='กระป๋อง'||i.name==='ฝากระป๋อง');
+  const quick=M().items.filter(i=>i.cat==='วัตถุดิบ'||i.name==='กระป๋อง'||i.name==='ฝากระป๋อง'||/^เทปใส/.test(i.name));
   shell('use',`<section class="panel"><div class="field"><span class="lbl">ประเภท</span>${seg('type',[['ใช้ผลิต','ใช้ผลิตจริง'],['ตัดเสีย','ตัดเสีย / ทิ้ง']],'ใช้ผลิต')}</div>
   <div class="field"><label for="from">ตัดจาก</label><select id="from"></select></div>
   <div class="warnbox">ปลา: บันทึกในหน้า <b>ผลิต</b> • ฉลากและกล่อง: ตัดอัตโนมัติจากหน้า <b>ติดฉลาก</b> และ <b>ลงกล่อง</b></div></section>
-  <section class="panel"><h3>วัตถุดิบซอส กระป๋อง ฝา</h3><div class="hint">กรอกเฉพาะที่ใช้วันนี้ ช่องว่าง = ไม่ได้ใช้</div>
+  <section class="panel"><h3>วัตถุดิบซอส กระป๋อง ฝา เทปใส</h3><div class="hint">กรอกเฉพาะที่ใช้วันนี้ ช่องว่าง = ไม่ได้ใช้</div>
   <div id="quick">${quick.map(i=>`<div class="qrow" data-item="${esc(i.name)}"><span>${esc(i.name)}</span><input class="num" type="number" inputmode="decimal" min="0" step="0.01" aria-label="${esc(i.name)}"><span class="u">${esc(i.base)}</span></div>`).join('')}</div>
   <h3>รายการอื่น</h3><div class="list" id="lines"></div><button type="button" class="add" id="add">+ เพิ่มรายการอื่น</button>
   <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div></section>`);
@@ -676,8 +677,36 @@ function fBox(){
     return {errs,sum,head:sku+' • ลงกล่อง',payload:{sku,lot:val(null,'#lot'),note:val(null,'#note'),lines}};};
 }
 
+/* ---------- แกะกล่อง / แพ็คใหม่ (กล่อง 100 ที่ลงระบบแล้ว -> กล่อง 20/40/50) ---------- */
+const RP_SIZES=[20,40,50];
+function fRepack(){
+  factory='J&N'; /* online orders ship from J&N only */
+  shell('repack',`<section class="panel"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
+  <div class="field"><label for="rq">แกะกล่อง 100 กี่กล่อง</label><input id="rq" class="num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></div>
+  <div class="hint">ใช้เมื่อกล่อง 100 ลงระบบไปแล้ว แต่ต้องแกะมาแพ็คเป็นกล่องเล็กสำหรับออเดอร์ออนไลน์ • ระบบลดสต๊อกกล่อง 100 และเพิ่มสต๊อกกล่องเล็กให้เอง ไม่ต้องลงกล่องซ้ำ</div></section>
+  <section class="panel"><h3>แพ็คใหม่เป็น <span class="opt">(กรอกเฉพาะขนาดที่แพ็ค)</span></h3><div class="szgrid">${RP_SIZES.map(z=>`<label class="szc"><span>กล่อง ${z}</span><input class="rpz num" data-z="${z}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}</div>
+  <div class="hint">ระบบตัดสต๊อก<b>กล่องเปล่า</b>ขนาดเล็กที่ใช้แพ็คให้อัตโนมัติ (จาก ${esc(storeLoc())})</div>
+  <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
+  <div class="total"><span id="rpSub">กระป๋องที่แกะ 0 • แพ็คใหม่ 0</span><b class="num" id="rpVal">เหลือ 0 กป</b></div><div class="hint warn" id="rpWarn"></div></section>`);
+  const calc=()=>{const q=n(val(null,'#rq'))||0;let inn=0;$$('.rpz').forEach(x=>inn+=(n(x.value.trim())||0)*Number(x.dataset.z));
+    $('#rpSub').textContent='กระป๋องที่แกะ '+fmt(q*100)+' • แพ็คใหม่ '+fmt(inn);
+    $('#rpVal').textContent=(inn>q*100?'เกิน ':'เหลือ ')+fmt(Math.abs(q*100-inn))+' กป';
+    $('#rpWarn').textContent=inn>q*100?'แพ็คใหม่มากกว่ากระป๋องที่แกะ — ตรวจจำนวนอีกครั้ง':(q>0&&inn<q*100?'กระป๋องที่เหลือ จะกลับเป็นกระป๋องหลวม (เอาไปใช้ใน แพ็คพิเศษ ได้)':'');};
+  $('#f').addEventListener('input',calc);
+  pending=()=>{const sku=val(null,'#sku'),q=n(val(null,'#rq')),lines=[],sum=[],errs=[];let inn=0;
+    if(!sku)errs.push('เลือกสินค้า (SKU)');
+    if(!(q>0)||q%1)errs.push('กรอกจำนวนกล่อง 100 ที่แกะ (จำนวนเต็ม)');
+    $$('.rpz').forEach(x=>{const b=n(x.value.trim());if(!(b>0))return;if(b%1){errs.push('กล่อง '+x.dataset.z+': จำนวนต้องเป็นจำนวนเต็ม');return;}
+      lines.push({size:x.dataset.z,boxes:b});inn+=b*Number(x.dataset.z);sum.push([sku||'-','แพ็คใหม่ กล่อง '+x.dataset.z,'+'+fmt(b)+' กล่อง']);});
+    if(!lines.length)errs.push('กรอกจำนวนที่แพ็คใหม่อย่างน้อย 1 ขนาด');
+    if(q>0&&inn>q*100)errs.push('แพ็คใหม่ '+fmt(inn)+' กป มากกว่ากระป๋องที่แกะ '+fmt(q*100)+' กป');
+    sum.unshift([sku||'-','แกะกล่อง 100 ('+fmt((q||0)*100)+' กป)','-'+fmt(q||0)+' กล่อง']);
+    if(q>0&&inn<q*100)sum.push([sku||'-','กระป๋องเหลือ กลับเป็นกระป๋องหลวม',fmt(q*100-inn)+' กป']);
+    return {errs,sum,head:sku+' • แกะกล่อง/แพ็คใหม่',payload:{sku,openQty:q,lines,note:val(null,'#note')}};};
+}
+
 /* ---------- จ่ายออก ---------- */
-const obxHtml=()=>{const L=M().items.filter(i=>i.cat==='บรรจุภัณฑ์ออนไลน์'||i.name==='ถุงแพ็ค 10').concat(M().items.filter(i=>i.cat==='บรรจุภัณฑ์'&&/^กล่อง \d+$/.test(i.name)).sort((a,b)=>parseInt(a.name.slice(6))-parseInt(b.name.slice(6))));return L.length?`<section class="panel" id="obox" hidden><h3>กล่องที่ใช้แพ็ก (ออนไลน์)</h3><div class="hint">กรอกเฉพาะกล่องที่ใช้ ระบบตัดสต๊อก<b>กล่องเปล่า</b>ให้อัตโนมัติ • กล่อง 20–100 ตรงนี้ = กล่องเปล่าใช้แพ็ก <b>ไม่ตัดสต๊อกปลากระป๋อง</b></div><div class="szgrid">${L.map(i=>`<label class="szc"><span>${esc(i.name)}</span><input class="obx num" data-item="${esc(i.name)}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}</div></section>`:'<div id="obox" hidden></div>';};
+const obxHtml=()=>{const L=M().items.filter(i=>i.cat==='บรรจุภัณฑ์ออนไลน์'||i.name==='ถุงแพ็ค 10'||(i.cat==='วัสดุสิ้นเปลือง'&&/^(เทปใส|บับเบิ้ล)/.test(i.name))).concat(M().items.filter(i=>i.cat==='บรรจุภัณฑ์'&&/^กล่อง \d+$/.test(i.name)).sort((a,b)=>parseInt(a.name.slice(6))-parseInt(b.name.slice(6))));return L.length?`<section class="panel" id="obox" hidden><h3>กล่อง เทป บับเบิ้ล ที่ใช้แพ็ก (ออนไลน์)</h3><div class="hint">กรอกเฉพาะที่ใช้ ระบบตัดสต๊อก<b>กล่อง เทป บับเบิ้ล</b>ให้อัตโนมัติ (เทป/บับเบิ้ล นับเป็น <b>ม้วน</b>) • กล่อง 20–100 ตรงนี้ = กล่องเปล่าใช้แพ็ก <b>ไม่ตัดสต๊อกปลากระป๋อง</b></div><div class="szgrid">${L.map(i=>`<label class="szc"><span>${esc(i.name)}${/^(เทปใส|บับเบิ้ล)/.test(i.name)?' ('+esc(i.base)+')':''}</span><input class="obx num" data-item="${esc(i.name)}" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>`).join('')}</div></section>`:'<div id="obox" hidden></div>';};
 function fDispatch(){
   shell('dispatch',`<section class="panel"><div class="grid2"><div class="field"><label for="ch">ช่องทาง</label><select id="ch"><option value="">เลือกช่องทาง</option>${M().channels.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div>
   <div class="field"><label for="tp">ประเภทการเคลื่อนย้าย</label><select id="tp"><option value="">เลือกประเภท</option>${M().moveTypes.map(c=>`<option>${esc(c)}</option>`).join('')}</select></div></div>
@@ -704,7 +733,7 @@ function fDispatch(){
       const sp=n(val(d,'.spc'));if(sp>0){k++;lines.push({sku:s,size:'1',boxes:sp});sum.push([s,'แพ็คพิเศษ',fmt(sp)+' กป']);}
       $$('.opz',d).forEach(x=>{const q=n(x.value.trim());if(q>0){k++;openBoxes.push({sku:s,size:x.dataset.z,qty:q});sum.push([s,'แกะกล่อง '+x.dataset.z,fmt(q)+' กล่อง']);}});
       if(!k)errs.push(`สินค้าที่ ${i+1}: กรอกจำนวนอย่างน้อย 1 ขนาด`);});
-    const packBoxes=[];if(!$('#obox').hidden)$$('.obx').forEach(x=>{const q=n(x.value.trim());if(q>0){packBoxes.push({item:x.dataset.item,qty:q});sum.push([x.dataset.item,'กล่องแพ็กออนไลน์',fmt(q)+' ใบ']);}});
+    const packBoxes=[];if(!$('#obox').hidden)$$('.obx').forEach(x=>{const q=n(x.value.trim());if(q>0){packBoxes.push({item:x.dataset.item,qty:q});sum.push([x.dataset.item,'ใช้แพ็กออนไลน์',fmt(q)+' '+((itemBy(x.dataset.item)||{}).base||'ใบ')]);}});
     return {errs,sum,head:ch+' • '+tp+(val(null,'#cust')?' • '+val(null,'#cust'):''),payload:{channel:ch,type:tp,ref:val(null,'#ref'),customer:val(null,'#cust'),cash:val(null,'#cash'),note:val(null,'#note'),lines,packBoxes,openBoxes}};};
 }
 
