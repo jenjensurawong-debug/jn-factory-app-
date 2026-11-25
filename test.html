@@ -657,18 +657,18 @@ function fLabel(){
 }
 
 /* ---------- ลงกล่อง ---------- */
-const SIZES=[['20','กล่อง 20'],['40','กล่อง 40'],['50','กล่อง 50'],['100','กล่อง 100']];
+const SIZES=[['20','กล่อง 20'],['40','กล่อง 40'],['50','กล่อง 50'],['100','กล่อง 100'],['100','กล่องเปลือย (ไม่พิมพ์แบรนด์) 100','bare']];
 function fBox(){
   shell('box',`<section class="panel"><div class="grid2"><div class="field"><label for="sku">สินค้า (SKU)</label><select id="sku">${skuOptions()}</select></div>
   <div class="field"><label for="lot">ล็อต <span class="opt">(ถ้ามี)</span></label><input id="lot"></div></div></section>
-  <section class="panel"><h3>จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะขนาดที่ลงวันนี้)</span></h3><div class="list" id="lines">${SIZES.map(z=>`<div class="item bxrow" data-z="${z[0]}"><b class="bxh">${z[1]}</b><div class="g3">
+  <section class="panel"><h3>จำนวนแต่ละขนาด <span class="opt">(กรอกเฉพาะขนาดที่ลงวันนี้)</span></h3><div class="list" id="lines">${SIZES.map(z=>`<div class="item bxrow" data-z="${z[0]}"${z[2]?' data-bare="1"':''}><b class="bxh">${z[1]}</b><div class="g3">
     <label class="szc"><span>${z[0]==='10'?'แพ็คดี':'กล่องดี'}</span><input class="good num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label>
     <label class="szc"><span>บุบ (กป)</span><input class="dent num" type="number" inputmode="numeric" min="0" placeholder="0"></label>
     <label class="szc"><span>${z[0]==='10'?'แพ็คเสีย':'กล่องเสีย'}</span><input class="waste num" type="number" inputmode="numeric" min="0" placeholder="0"></label></div></div>`).join('')}
     <div class="item bxloose"><b class="bxh">กระป๋องหลวม (เศษไม่เต็มกล่อง)</b><div class="g3">
     <label class="szc"><span>กระป๋องหลวม (กป)</span><input id="loose" class="num" type="number" inputmode="numeric" min="0" step="1" placeholder="0"></label></div>
     <div class="hint">กระป๋องที่ติดฉลากแล้วแต่ไม่พอเต็มกล่อง • กล่องดีใส่เป็นจำนวนเต็มเท่านั้น เศษให้ใส่ช่องนี้ • ระบบนับเป็นกระป๋องหลวมพร้อมใช้ (แพ็คพิเศษ) ให้เอง</div></div></div>
-  <div class="hint">ระบบตัดสต๊อกกล่องเปล่าอัตโนมัติ = กล่องดี + กล่องเสีย (จาก ${esc(storeLoc())})</div>
+  <div class="hint">ระบบตัดสต๊อกกล่องเปล่าอัตโนมัติ = กล่องดี + กล่องเสีย (จาก ${esc(storeLoc())}) • ลูกค้ายังไม่มีกล่องแบรนด์ ใช้ช่อง กล่องเปลือย</div>
   <div class="field"><label for="note">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="note"></textarea></div>
   <div class="total"><span id="tSub">รวมกระป๋องในกล่องดี</span><b class="num" id="tVal">0 กป</b></div><div class="hint warn" id="bxWarn"></div></section>`);
   const tot=()=>{let t=0,dec=false;$$('#lines .bxrow').forEach(d=>{const g=n(val(d,'.good'))||0;if(g%1)dec=true;t+=g*Number(d.dataset.z);});const l=n(val(null,'#loose'))||0;
@@ -677,7 +677,7 @@ function fBox(){
   $('#f').addEventListener('input',tot);
   pending=()=>{const sku=val(null,'#sku'),lines=[],sum=[],errs=[];if(!sku)errs.push('เลือกสินค้า (SKU)');
     $$('#lines .bxrow').forEach(d=>{const s=d.dataset.z,g=val(d,'.good'),dn=val(d,'.dent'),w=val(d,'.waste');if(!g&&!dn&&!w)return;
-      const gn=n(g)||0;if(gn%1){errs.push('กล่อง '+s+': กล่องดีต้องเป็นจำนวนเต็ม (เศษใส่ช่อง กระป๋องหลวม)');return;}lines.push({size:s,good:gn,dent:dn,waste:w});sum.push([(s==='10'?'แพ็ค ':'กล่อง ')+s,'บุบ '+fmt(dn||0)+' กป • เสีย '+fmt(w||0)+' ใบ',fmt(gn)+' '+(s==='10'?'แพ็ค':'กล่อง')]);});
+      const gn=n(g)||0;if(gn%1){errs.push('กล่อง '+s+': กล่องดีต้องเป็นจำนวนเต็ม (เศษใส่ช่อง กระป๋องหลวม)');return;}const bare=d.dataset.bare==='1';lines.push(bare?{size:s,good:gn,dent:dn,waste:w,bare:true}:{size:s,good:gn,dent:dn,waste:w});sum.push([bare?'กล่องเปลือย '+s:(s==='10'?'แพ็ค ':'กล่อง ')+s,'บุบ '+fmt(dn||0)+' กป • เสีย '+fmt(w||0)+' ใบ',fmt(gn)+' '+(s==='10'?'แพ็ค':'กล่อง')]);});
     const lo=n(val(null,'#loose'))||0;if(lo<0||lo%1)errs.push('กระป๋องหลวม: ใส่จำนวนเต็ม');else if(lo)sum.push(['กระป๋องหลวม','เศษไม่เต็มกล่อง',fmt(lo)+' กป']);
     if(!lines.length&&!errs.some(e=>e.indexOf('กล่องดีต้องเป็นจำนวนเต็ม')>=0))errs.push('กรอกจำนวนอย่างน้อย 1 ขนาด');
     const nt=val(null,'#note'),note=lo>0?('[เศษหลวม '+lo+' กป]'+(nt?' '+nt:'')):nt;
