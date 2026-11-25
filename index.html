@@ -255,7 +255,10 @@ function itemOptions(list,blank){
   const cats=[...new Set(list.map(i=>i.cat))];
   return (blank?`<option value="">${blank}</option>`:'')+cats.map(c=>`<optgroup label="${esc(c)}">`+list.filter(i=>i.cat===c).map(i=>`<option>${esc(i.name)}</option>`).join('')+'</optgroup>').join('');
 }
-const skuOptions=all=>'<option value="">เลือกสินค้า</option>'+M().skus.filter(s=>all||s.unit!=='ขวด').map(s=>`<option>${esc(s.name)}</option>`).join('');
+const skuOptions=all=>{const L=M().skus.filter(s=>all||s.unit!=='ขวด'),op=s=>`<option>${esc(s.name)}</option>`;let h='<option value="">เลือกสินค้า</option>';
+  if(!L.some(s=>s.brand))return h+L.map(op).join('');
+  const g=[],ix={};L.forEach(s=>{const k=s.brand||'อื่นๆ';if(!(k in ix)){ix[k]=g.length;g.push([k,[]]);}g[ix[k]][1].push(s);});
+  return h+g.map(x=>`<optgroup label="${esc(x[0])}">${x[1].map(op).join('')}</optgroup>`).join('');};
 function seg(name,opts,val){return `<div class="seg" data-seg="${name}" role="group">`+opts.map(o=>{const v=Array.isArray(o)?o[0]:o,l=Array.isArray(o)?o[1]:o;return `<button type="button" data-v="${esc(v)}" aria-pressed="${v===val}">${esc(l)}</button>`;}).join('')+'</div>';}
 const segVal=(el,name)=>{const b=(el||document).querySelector(`[data-seg="${name}"] [aria-pressed="true"]`);return b?b.dataset.v:'';};
 document.addEventListener('click',e=>{const b=e.target.closest('.seg button');if(!b)return;const s=b.parentElement;$$('button',s).forEach(x=>x.setAttribute('aria-pressed',x===b));s.dispatchEvent(new CustomEvent('segchange',{bubbles:true,detail:b.dataset.v}));});
