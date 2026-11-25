@@ -185,6 +185,11 @@ main>*,section.panel>*,.kpis>*{min-width:0}
   <h3 id="ovT">ตรวจสอบก่อนบันทึก</h3><div class="hint" id="ovHead"></div><div class="list" id="ovList"></div>
   <div class="btns"><button type="button" class="ghost" id="ovBack">แก้ไข</button><button type="button" class="primary" id="ovOk">ยืนยันบันทึก</button></div>
 </div></div>
+<div class="overlay" id="ovS" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ovST">
+  <h3 id="ovST">⚠ สต๊อกไม่พอ</h3><div class="hint">ระบบนับสต๊อกแล้วพบว่าของต่อไปนี้ไม่พอ ถ้าของมาถึงแล้ว ให้ลง <b>รับเข้า</b> ก่อน แล้วค่อยกลับมาลงงานนี้ค่ะ</div><div class="list" id="ovSList"></div>
+  <div class="hint">ถ้ากด บันทึกต่อ ระบบจะติดป้าย [สต๊อกไม่พอ] ไว้ในรายการให้ออฟฟิศตรวจสอบ</div>
+  <div class="btns"><button type="button" class="ghost" id="ovSRecv">ไปลงรับเข้า</button><button type="button" class="primary" id="ovSGo">บันทึกต่อ</button></div>
+</div></div>
 <div class="overlay" id="ovE" hidden><div class="sheet" role="dialog" aria-modal="true" aria-labelledby="ovET">
   <h3 id="ovET">แก้ไขรายการที่กรอกผิด</h3><div class="hint" id="ovEHead"></div><div id="ovEBody"></div><div class="err" id="ovEErr" hidden></div>
   <div class="btns"><button type="button" class="ghost" id="ovECancel">ปิด</button><button type="button" class="primary" id="ovESave">บันทึกการแก้ไข</button></div>
@@ -981,12 +986,21 @@ function review(kind){
   $('#ov').hidden=false; $('#ovOk').disabled=false; $('#ovOk').focus();
 }
 $('#ovBack').onclick=()=>$('#ov').hidden=true;
-$('#ovOk').onclick=()=>{
-  $('#ovOk').disabled=true; $('#ovOk').textContent='กำลังบันทึก…';
-  run('submit',current.kind,current.payload).then(res=>{
-    $('#ov').hidden=true; B.recent=res.recent||B.recent; toast('บันทึกแล้ว ✓'); home();
-  }).catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);}).finally(()=>{$('#ovOk').disabled=false;$('#ovOk').textContent='ยืนยันบันทึก';});
-};
+function doSubmit(force){
+  $('#ovOk').disabled=true; $('#ovOk').textContent='กำลังบันทึก…'; $('#ovSGo').disabled=true;
+  const pl=force?Object.assign({},current.payload,{force:true}):current.payload;
+  run('submit',current.kind,pl).then(res=>{
+    if(res&&res.warn){
+      $('#ov').hidden=true;
+      $('#ovSList').innerHTML=res.short.map(x=>`<div class="sum-row"><div><b>${esc(x.item)}</b><small>มีในระบบ ${fmt(x.have)} • ต้องใช้ ${fmt(x.need)} ${esc(x.unit||'')}</small></div><b class="num">ขาด ${fmt(x.need-x.have)}</b></div>`).join('');
+      $('#ovS').hidden=false; return;
+    }
+    $('#ov').hidden=true; $('#ovS').hidden=true; B.recent=res.recent||B.recent; toast('บันทึกแล้ว ✓'); home();
+  }).catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);}).finally(()=>{$('#ovOk').disabled=false;$('#ovOk').textContent='ยืนยันบันทึก';$('#ovSGo').disabled=false;});
+}
+$('#ovOk').onclick=()=>doSubmit(false);
+$('#ovSGo').onclick=()=>doSubmit(true);
+$('#ovSRecv').onclick=()=>{$('#ovS').hidden=true;$('#ov').hidden=true;openForm('receive');};
 })();
 </script>
 </body>
