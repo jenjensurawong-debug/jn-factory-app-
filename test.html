@@ -205,10 +205,15 @@ const API_URL="https://script.google.com/macros/s/AKfycbw2Usx2dlYGnyAS_lyF9s-zzX
 /* ---------- Google sign-in (ID token, verified by the server) ---------- */
 const TK='jn_tok';
 let tok=null; try{tok=JSON.parse(localStorage.getItem(TK)||'null');}catch(e){}
-const tokOk=()=>tok&&tok.exp-Date.now()>120e3;
+/* 30-day sign-in: server swaps a fresh Google token for its own signed session (renewed while in use) */
+const SK='jn_ses'; let ses=null; try{ses=JSON.parse(localStorage.getItem(SK)||'null');}catch(e){}
+const sesOk=()=>!!(ses&&ses.s&&ses.exp-Date.now()>3600e3);
+const saveSes=j=>{if(j&&j.ses){ses={s:j.ses,exp:j.sesExp};try{localStorage.setItem(SK,JSON.stringify(ses));}catch(e){}}};
+const tokOk=()=>(tok&&tok.exp-Date.now()>120e3)||sesOk();
 let authWait=null;
 function jwtExp(t){try{return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))).exp*1000;}catch(e){return 0;}}
 function onCred(r){tok={t:r.credential,exp:jwtExp(r.credential)};try{localStorage.setItem(TK,JSON.stringify(tok));}catch(e){}
+  fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:'session',token:tok.t})}).then(x=>x.json()).then(saveSes).catch(()=>{});
   $('#auth').hidden=true;if(authWait){const w=authWait;authWait=null;w();}}
 function gisReady(){return new Promise(res=>{const c=()=>window.google&&google.accounts&&google.accounts.id?res():setTimeout(c,50);c();});}
 let gisInit=false;
@@ -221,17 +226,17 @@ function signIn(){
     google.accounts.id.prompt();
   });});
 }
-function signOut(){try{localStorage.removeItem(TK);}catch(e){}tok=null;try{google.accounts.id.disableAutoSelect();}catch(e){}location.reload();}
+function signOut(){try{localStorage.removeItem(TK);localStorage.removeItem(SK);}catch(e){}tok=null;ses=null;try{google.accounts.id.disableAutoSelect();}catch(e){}location.reload();}
 async function call(fn,args){
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args,token:tok&&tok.t})});
+  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({fn:fn,args:args,token:tok&&tok.t,ses:sesOk()?ses.s:undefined})});
   if(!r.ok)throw new Error('เซิร์ฟเวอร์ตอบกลับผิดพลาด ('+r.status+') ลองใหม่อีกครั้ง');
-  return r.json();
+  const j=await r.json();saveSes(j);return j;
 }
 async function run(fn,...args){
   await signIn();
   let j;
   try{j=await call(fn,args);}catch(e){throw new Error(navigator.onLine?(e.message||'เชื่อมต่อไม่ได้ ลองใหม่อีกครั้ง'):'ไม่มีอินเทอร์เน็ต ลองใหม่อีกครั้ง');}
-  if(!j.ok&&j.code==='AUTH'){tok=null;try{localStorage.removeItem(TK);}catch(e){}await signIn();j=await call(fn,args);}
+  if(!j.ok&&j.code==='AUTH'){tok=null;ses=null;try{localStorage.removeItem(TK);localStorage.removeItem(SK);}catch(e){}await signIn();j=await call(fn,args);}
   if(!j.ok)throw new Error(j.error||'เกิดข้อผิดพลาด');
   return j.result;
 }
