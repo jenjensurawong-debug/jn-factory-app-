@@ -168,6 +168,21 @@ main>*,section.panel>*,.kpis>*{min-width:0}
 .mtck{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
 #mf{display:grid;gap:16px}
 .mtck input{width:22px;height:22px;min-height:22px;flex:none;margin:1px 0 0;padding:0;accent-color:var(--red)}
+/* QC tab */
+.qbtns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.qbtns .ghost{display:grid;gap:2px;padding:8px 10px;text-align:left;min-height:64px;align-content:center}
+.qbtns .ghost b{color:var(--red);font-family:var(--f-display)}
+.qbtns .ghost span{font-size:12.5px;font-weight:400;color:var(--muted)}
+.q5{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px}
+.q5 input{width:100%;min-width:0;padding:8px 4px;text-align:center}
+.q3t input.q3{width:100%;min-width:64px;padding:8px 6px}
+.q3t td,.q3t th{text-align:center}.q3t td:first-child{text-align:left;white-space:nowrap}
+.q3t .lim{font-size:11.5px;color:var(--muted);white-space:nowrap}
+.q3t .calcrow td{color:var(--slate);font-weight:600}
+.bad{color:var(--red)!important;font-weight:700}
+input.bad{border-color:var(--red)!important;background:var(--red-tint)}
+.badtxt{color:var(--red)}
+.qvoid{grid-column:1/-1;margin-top:6px;font-size:13px}
 </style>
 </head>
 <body>
@@ -368,12 +383,13 @@ const TILES=[
   ['dispatch','จ่ายออก','ส่งของ ช่องทางขาย ลูกค้า'],
   ['count','ตรวจนับสต๊อก','ยอดนับจริง ห้องเย็น/คลัง'],
   ['labor','ค่าแรง / OT','ยอดรวมค่าแรงและ OT รายวัน','lab'],
-  ['maint','ซ่อมบำรุงเครื่องจักร','บันทึกงานซ่อม แผน PM เวลาหยุดเครื่อง','mt']
+  ['maint','ซ่อมบำรุงเครื่องจักร','บันทึกงานซ่อม แผน PM เวลาหยุดเครื่อง','mt'],
+  ['qc','ตรวจสอบคุณภาพ QC','บันทึกการตรวจ ทวนสอบ ล็อต HOLD','mt']
 ];
 function home(){
   const d=new Date(B.today+'T00:00');
   $('#view').innerHTML=`<div class="hello"><h2>สวัสดีค่ะ คุณ${esc(B.user.name)}</h2><p>${d.toLocaleDateString('th-TH',{weekday:'long',day:'numeric',month:'long',year:'numeric'})} • โรงงาน ${esc(factory)}</p></div>
-  ${B.isCeo?'<button type="button" class="tile ceo" id="ceoBtn"><b>ภาพรวม CEO</b><span>ต้นทุน/ลัง สต๊อกปลา ค่าแรง ยอดผลิต</span></button>':''}<div class="tiles">${TILES.filter(t=>(t[0]!=='labor'||B.isLabor)&&(t[0]!=='maint'||mtCan())).map(t=>`<button type="button" class="tile ${t[3]||''}" data-go="${t[0]}"><b>${t[1]}</b><span>${t[2]}</span></button>`).join('')}</div>
+  ${B.isCeo?'<button type="button" class="tile ceo" id="ceoBtn"><b>ภาพรวม CEO</b><span>ต้นทุน/ลัง สต๊อกปลา ค่าแรง ยอดผลิต</span></button>':''}<div class="tiles">${TILES.filter(t=>(t[0]!=='labor'||B.isLabor)&&(t[0]!=='maint'||mtCan())&&(t[0]!=='qc'||qcCan())).map(t=>`<button type="button" class="tile ${t[3]||''}" data-go="${t[0]}"><b>${t[1]}</b><span>${t[2]}</span></button>`).join('')}</div>
   ${B.isAdmin?`<div class="admin"><a href="${esc(B.mainUrl)}" target="_blank" rel="noopener">เปิดไฟล์หลัก (ราคา ค่าแรง ต้นทุน)</a><button type="button" id="syncBtn">ซิงก์ข้อมูลเข้าไฟล์หลักตอนนี้</button></div>`:''}
   <section class="panel"><div class="rhead"><h3>บันทึกของฉันวันนี้</h3><button type="button" class="linkbtn" id="histBtn">ดูย้อนหลัง 7 วัน →</button></div><div class="list" id="recent"></div></section>`;
   $('#histBtn').onclick=fHist;
@@ -475,7 +491,7 @@ function addLine(container,html,label){
   const rm=d.querySelector('.rm'); if(rm) rm.onclick=()=>{d.remove();$$('.item-head b',box).forEach((b,i)=>b.textContent=label+' '+(i+1));};
   box.appendChild(d); return d;
 }
-function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,repack:fRepack,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint})[k]();}
+function openForm(k){({receive:fReceive,move:fMove,use:fUse,produce:fProduce,label:fLabel,box:fBox,repack:fRepack,dispatch:fDispatch,count:fCount,labor:fLabor,maint:fMaint,qc:fQc})[k]();}
 
 /* ---------- รับเข้า ---------- */
 function fReceive(){
@@ -924,6 +940,244 @@ function mtForm(pre){
       .catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);btn.disabled=false;btn.textContent='บันทึก';});
   };
 }
+
+/* ---------- ตรวจสอบคุณภาพ QC (loads its data only when this tab is opened) ---------- */
+const qcCan=()=>!!B.qc; // server decides: ผู้ดูแล while testing, then everyone listed in the QC user tab
+let MQ=null, MQat=0, qView='today', qHistF='';
+const QF={'FM-QC-01':'ตรวจตะเข็บด้วยสายตา','FM-QC-03':'ฉีกตะเข็บกระป๋อง','FM-QC-04':'อุณหภูมิปลาก่อน/หลังนึ่ง','FM-QC-06':'ตรวจหลังฆ่าเชื้อ'};
+const qNow=()=>MQ?MQ.nowMin+Math.floor((Date.now()-MQat)/60000):0;
+const qMin=n=>n>=60?Math.floor(n/60)+' ชม. '+(n%60?n%60+' นาที':''):n+' นาที';
+const qMemGet=f=>{try{return JSON.parse(localStorage.getItem('jnqc_'+f)||'{}');}catch(e){return {};}};
+const qMemSet=(f,m)=>{try{localStorage.setItem('jnqc_'+f,JSON.stringify(m));}catch(e){}};
+const qDefectsOf=l=>l.rows&&l.rows.cans?l.rows.cans.filter(c=>c!=='ผ่าน').length:0;
+function fQc(){
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>ตรวจสอบคุณภาพ QC</h2>${B.qc&&B.isAdmin&&MQ&&MQ.testOnly?'<span class="chip">ทดสอบ</span>':''}</div>
+  <section class="panel"><div class="kpis" id="qSum"></div>
+  <div class="field"><span class="lbl">บันทึกการตรวจใหม่</span><div class="qbtns">${Object.keys(QF).map(k=>`<button type="button" class="ghost" data-qf="${k}"><b>${k}</b><span>${QF[k]}</span></button>`).join('')}</div></div>
+  <div class="field"><span class="lbl">ดูข้อมูล</span>${seg('qview',[['today','วันนี้'],['verify','รอทวนสอบ'],['hold','ล็อต HOLD'],['hist','ประวัติ']],qView)}</div></section>
+  <div id="qc" class="mtbody"></div>`;
+  $('#back').onclick=home;
+  $('[data-seg="qview"]').addEventListener('segchange',e=>{qView=e.detail;qDraw();});
+  $$('[data-qf]').forEach(b=>b.onclick=()=>{if(MQ)qForm(b.dataset.qf);});
+  window.scrollTo(0,0);
+  if(MQ)qDraw();else qLoad();
+}
+function qLoad(){
+  $('#qSum').innerHTML='';$('#qc').innerHTML='<div class="center" style="min-height:30vh"><div class="spinner"></div></div>';
+  run('qcLoad').then(d=>{MQ=d;MQat=Date.now();if($('#qc'))qDraw();}).catch(e=>{if($('#qc'))$('#qc').innerHTML=`<section class="panel"><p class="warnbox">${esc(e.message||e)}</p></section>`;});
+}
+const qSet=d=>{MQ=d;MQat=Date.now();};
+function qDraw(){
+  if(!MQ||!$('#qc'))return;
+  const td=MQ.logs.filter(l=>l.date===MQ.today&&l.status!=='ยกเลิก'), bad=td.filter(l=>l.result==='ไม่ผ่าน').length;
+  $('#qSum').innerHTML=`<div class="kpi${MQ.holds.length?' hero':''}"><span>ล็อต HOLD อยู่</span><b class="num">${MQ.holds.length}</b><small>${MQ.holds.length?'แตะ "ล็อต HOLD" เพื่อดูและปล่อยล็อต':'ไม่มีล็อตที่ถูกระงับ'}</small></div>
+  <div class="kpi"><span>รอทวนสอบ</span><b class="num">${MQ.pending.length}</b><small>แตะ "รอทวนสอบ" เพื่อทวนสอบ</small></div>
+  <div class="kpi"><span>ตรวจวันนี้</span><b class="num">${td.length}</b><small>ไม่ผ่าน ${bad} รายการ</small></div>`;
+  ({today:qToday,verify:qVerify,hold:qHold,hist:qHist})[qView]();
+}
+/* ครบกำหนดตรวจ: เตือนเมื่อเลยเวลาตามรอบของแบบฟอร์ม */
+function qDue(f){
+  const x=MQ.due[f];
+  if(x.st==='ended')return ['okc','จบการตรวจวันนี้แล้ว'];
+  if(x.st==='none')return ['','ยังไม่ตรวจวันนี้ • รอบตรวจทุก '+qMin(x.every)];
+  const p=x.last.split(':').map(Number), over=(qNow()-(p[0]*60+p[1]))-x.every;
+  if(over>0)return ['over','เลยกำหนดตรวจ '+qMin(over)+' • ล่าสุด '+x.last+' น.'];
+  if(over>=-10)return ['soon','ใกล้ถึงเวลาตรวจ (อีก '+(-over)+' นาที) • ล่าสุด '+x.last+' น.'];
+  return ['okc','ล่าสุด '+x.last+' น. • ครั้งต่อไปอีก '+qMin(-over)];
+}
+function qToday(){
+  const L=MQ.logs.filter(l=>l.date===MQ.today);
+  $('#qc').innerHTML=`<section class="panel"><h3>รอบตรวจวันนี้</h3><div class="list">${['FM-QC-01','FM-QC-03','FM-QC-04'].map(f=>{const d=qDue(f);
+    return `<div class="entry"><span class="t">${f} ${QF[f]}</span><button type="button" class="linkbtn" data-qf2="${f}">บันทึก →</button>
+    <div class="meta"><span class="chip ${d[0]}">${esc(d[1])}</span>${MQ.due[f].st==='run'?`<button type="button" class="linkbtn" data-qend="${f}">จบการตรวจวันนี้</button>`:''}</div></div>`;}).join('')}
+  <div class="entry"><span class="t">FM-QC-06 ${QF['FM-QC-06']}</span><button type="button" class="linkbtn" data-qf2="FM-QC-06">บันทึก →</button><div class="meta"><span>ตรวจเป็นรอบ/ตะกร้า ไม่มีการเตือนเวลา</span></div></div></div>
+  <p class="hint">เตือนรอบตรวจ: FM-QC-01 ทุก 60 นาที • FM-QC-03 ทุก 120 นาที • FM-QC-04 ทุก 30 หรือ 60 นาที (ตามที่เลือกครั้งล่าสุด) • กด "จบการตรวจวันนี้" เมื่อเลิกตรวจเพื่อหยุดเตือน</p></section>
+  <section class="panel"><h3>รายการวันนี้ <span class="opt">(${L.length})</span></h3><div class="list">${L.length?L.map(l=>qEntry(l)).join(''):'<div class="empty">ยังไม่มีรายการวันนี้</div>'}</div></section>`;
+  $$('[data-qf2]').forEach(b=>b.onclick=()=>qForm(b.dataset.qf2));
+  $$('[data-qend]').forEach(b=>b.onclick=()=>{b.disabled=true;run('qcEnd',b.dataset.qend).then(d=>{qSet(d);toast('จบการตรวจวันนี้แล้ว ✓');qDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+}
+/* ---- รายละเอียดแต่ละแบบฟอร์ม ---- */
+function qDetail(l){
+  const R=l.rows||{}, H=l.header||{}; let s='';
+  if(l.form==='FM-QC-01')s=`<p>Seamer ${esc(H.seamer)} • ${esc(l.canSize)}</p><p>${(R.cans||[]).map((c,i)=>'ใบที่ '+(i+1)+': '+esc(c)).join(' • ')}</p>${R.defects?`<p><b>ข้อบกพร่อง:</b> ${esc(R.defects)}</p>`:''}${R.correction?`<p><b>การแก้ไข:</b> ${esc(R.correction)}</p>`:''}${R.follow?`<p><b>ติดตามผล:</b> ${esc(R.follow)}</p>`:''}`;
+  else if(l.form==='FM-QC-03')s=`<p>Seamer ${esc(H.seamer)} • TB ${esc(H.tb)} TE ${esc(H.te)} mm • ${esc(l.canSize)}${H.csdGauge?' • เกจ '+esc(H.csdGauge):''}${H.micrometer?' • ไมโครมิเตอร์ '+esc(H.micrometer):''}</p>`
+    +(R.heads||[]).map(h=>`<div class="tbl"><table><thead><tr><th>หัว ${h.head}</th><th>1</th><th>2</th><th>3</th></tr></thead><tbody>${['csd','st','sl','ch','bh','aol','ol','bhb','tr'].map(k=>`<tr><td>${QL3[k]}</td>${h.rows.map(r=>`<td class="num${qOut(l.canSize,k,r[k])?' bad':''}">${r[k]}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`).join('')+(R.note?`<p><b>หมายเหตุ:</b> ${esc(R.note)}</p>`:'');
+  else if(l.form==='FM-QC-04')s=`<p>Line ${esc(H.line)} • ทุก ${esc(H.interval)} นาที${H.fw||H.nw||H.dw?' • F.W. '+esc(H.fw)+' N.W. '+esc(H.nw)+' D.W. '+esc(H.dw)+' g':''}${H.scale?' • เครื่องชั่ง '+esc(H.scale):''}${H.customer?' • ลูกค้า '+esc(H.customer):''}</p>
+    <p><b>ก่อนนึ่ง:</b> ${R.pre.join(', ')} (เฉลี่ย ${R.avgPre}) • <b>หลังนึ่ง:</b> ${R.post.join(', ')} (เฉลี่ย ${R.avgPost})</p>${R.drain.length?`<p><b>น้ำหนัก Drain:</b> ${R.drain.join(', ')} g (เฉลี่ย ${R.avgDrain})${R.pieces?' • ชิ้น '+esc(R.pieces):''}</p>`:''}${H.fishSize||H.rail||H.sauce?`<p>ขนาดปลา ${esc(H.fishSize)} • รางนึ่ง ${esc(H.rail)} • ซอส ${esc(H.sauce)}</p>`:''}`;
+  else s=`<p>ฆ่าเชื้อ ${esc(H.steriMin)} นาที ${esc(H.steriTemp)} °C${H.customer?' • ลูกค้า '+esc(H.customer):''}</p><div class="tbl"><table><thead><tr><th>ตะกร้า</th><th>ผลิต</th><th>Net</th><th>Drain</th><th>Head</th><th>ซอส</th><th>กระป๋อง</th></tr></thead><tbody>${(R.samples||[]).map(x=>`<tr><td>${esc(x.basket)} ${esc(x.fish)}</td><td>${mtD(x.prodDate)}</td><td class="num">${esc(x.net)}</td><td class="num">${esc(x.drain)}</td><td class="num">${esc(x.head)}</td><td class="num">${esc(x.sauce)}</td><td class="${x.can==='ผ่าน'?'':'bad'}">${esc(x.can)}</td></tr>`).join('')}</tbody></table></div>
+    <p>${Object.keys(QS6).map(k=>QS6[k]+': '+esc((R.summary[k]||{}).r)+((R.summary[k]||{}).note?' ('+esc(R.summary[k].note)+')':'')).join(' • ')}</p>`;
+  return `<details><summary>ดูรายละเอียด</summary>${s}</details>`;
+}
+const QL3={csd:'Countersink',st:'ST',sl:'SL',ch:'CH',bh:'BH',aol:'AOL',ol:'%OL',bhb:'%BHB',tr:'Tightness'};
+const QS6={foreign:'สิ่งแปลกปลอม',look:'ลักษณะปรากฏ',smell:'กลิ่น',taste:'รสสัมผัส',color:'สี'};
+const qOut=(size,k,v)=>{const L=(MQ.limits[size]||{})[k];return !!L&&((L.min!=null&&v<L.min)||(L.max!=null&&v>L.max));};
+const qEntry=(l,extra)=>{const vd=l.status==='ยกเลิก';
+  return `<div class="entry"><span class="t">${esc(l.form)} ${esc(QF[l.form]||'')}</span><span class="kg">${esc(l.time)} น.</span>
+  <div class="meta"><span class="chip ${vd?'':l.result==='ผ่าน'?'okc':'over'}">${vd?'ยกเลิก':esc(l.result)}</span><span class="chip ${l.status==='ทวนสอบแล้ว'?'okc':l.status==='รอทวนสอบ'?'soon':''}">${esc(l.status)}</span><span>${esc(l.product)} (${esc(l.code)}) • ${mtD(l.date)} • ${esc(l.by)}</span></div>
+  <div class="mtd"><p>${esc(l.summary)}</p>${l.lots&&l.result==='ไม่ผ่าน'?`<p><b>ล็อตที่ถูก HOLD:</b> ${esc(l.lots)}</p>`:''}${l.vBy&&l.status!=='รอทวนสอบ'?`<p><b>${vd?'ยกเลิก':'ทวนสอบ'}:</b> ${esc(l.vBy)} ${esc(l.vAt)}${l.vNote?' • '+esc(l.vNote):''}</p>`:''}${vd?'':qDetail(l)}</div>${extra||''}</div>`;};
+/* ---- รอทวนสอบ ---- */
+function qVerify(){
+  const L=MQ.pending;
+  $('#qc').innerHTML=`<section class="panel"><h3>รอทวนสอบ <span class="opt">(${L.length})</span></h3><p class="hint">ผู้ตรวจ (QC) ทวนสอบเองได้ เมื่อหัวหน้าอนุมัติแล้ว • กรอกหมายเหตุได้ เช่น "สุรางค์อนุมัติด้วยวาจา"</p>
+  <div class="list">${L.length?L.map(l=>qEntry(l,`<div class="mtclose"><input class="cn" placeholder="หมายเหตุทวนสอบ (ถ้ามี)" aria-label="หมายเหตุทวนสอบ"><button type="button" class="ghost" data-vf="${esc(l.id)}">ทวนสอบ ✓</button></div>
+    <details class="qvoid"><summary>ยกเลิกรายการ (กรอกผิด)</summary><div class="mtclose"><input class="vr" placeholder="เหตุผลที่ยกเลิก" aria-label="เหตุผลที่ยกเลิก"><button type="button" class="ghost" data-vd="${esc(l.id)}">ยกเลิก</button></div></details>`)).join(''):'<div class="empty">ไม่มีรายการรอทวนสอบ</div>'}</div></section>`;
+  $$('[data-vf]').forEach(b=>b.onclick=()=>{b.disabled=true;run('qcVerify',b.dataset.vf,b.parentElement.querySelector('.cn').value.trim()).then(d=>{qSet(d);toast('ทวนสอบแล้ว ✓');qDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+  $$('[data-vd]').forEach(b=>b.onclick=()=>{const why=b.parentElement.querySelector('.vr').value.trim();if(!why){toast('กรอกเหตุผลที่ยกเลิก',true);return;}b.disabled=true;
+    run('qcVoid',b.dataset.vd,why).then(d=>{qSet(d);toast('ยกเลิกรายการแล้ว');qDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+}
+/* ---- ล็อต HOLD ---- */
+const qLotName=h=>esc(h.code)+' • ผลิต '+mtD(h.prodDate)+' • '+(h.basket?'ตะกร้า '+esc(h.basket):'ทุกตะกร้าของวันนั้น');
+function qHold(){
+  const rel=MQ.user.release;
+  $('#qc').innerHTML=`<section class="panel"><h3>ล็อตที่ถูก HOLD <span class="opt">(${MQ.holds.length})</span></h3>
+  <p class="hint">HOLD เป็นป้ายเตือนเท่านั้น ไม่ตัดสต๊อก • ${rel?'คุณปล่อยล็อตได้ (ต้องกรอกหมายเหตุ)':'บัญชีนี้ปล่อยล็อตไม่ได้'}</p>
+  <div class="list">${MQ.holds.length?MQ.holds.map(h=>`<div class="entry"><span class="t">${qLotName(h)}</span><span class="kg"><span class="chip over">HOLD</span></span>
+    <div class="meta"><span>${esc(h.at)} • ${esc(h.by)}</span></div><div class="mtd"><p>${esc(h.reason)}</p><p class="hint">รายการ QC: ${esc(h.recs)}</p></div>
+    ${rel?`<div class="mtclose"><input class="cn" placeholder="หมายเหตุปล่อยล็อต (จำเป็น)" aria-label="หมายเหตุปล่อยล็อต"><button type="button" class="ghost" data-rel="${esc(h.id)}">ปล่อยล็อต ✓</button></div>`:''}</div>`).join(''):'<div class="empty">ไม่มีล็อตที่ถูก HOLD</div>'}</div></section>
+  ${MQ.released.length?`<section class="panel"><details><summary>ปล่อยแล้ว (${MQ.released.length})</summary><div class="list">${MQ.released.map(h=>`<div class="entry"><span class="t">${qLotName(h)}</span><span class="kg"><span class="chip okc">ปล่อยแล้ว</span></span><div class="meta"><span>${esc(h.relAt)} • ${esc(h.relBy)}${h.relNote?' • '+esc(h.relNote):''}</span></div></div>`).join('')}</div></details></section>`:''}`;
+  $$('[data-rel]').forEach(b=>b.onclick=()=>{const note=b.parentElement.querySelector('.cn').value.trim();if(!note){toast('กรอกหมายเหตุปล่อยล็อต',true);return;}b.disabled=true;
+    run('qcRelease',b.dataset.rel,note).then(d=>{qSet(d);toast('ปล่อยล็อตแล้ว ✓');qDraw();}).catch(e=>{toast(e.message||e,true);b.disabled=false;});});
+}
+function qHist(){
+  const L=MQ.logs.filter(l=>!qHistF||l.form===qHistF);
+  $('#qc').innerHTML=`<section class="panel"><div class="field"><label for="qhf">แบบฟอร์ม</label><select id="qhf"><option value="">ทุกแบบฟอร์ม</option>${Object.keys(QF).map(k=>`<option value="${k}"${k===qHistF?' selected':''}>${k} ${QF[k]}</option>`).join('')}</select></div>
+  <div class="hint">${L.length} รายการ${MQ.total>MQ.logs.length?' • แสดง '+MQ.logs.length+' รายการล่าสุด (ทั้งหมดอยู่ในชีต)':''}</div>
+  <div class="list">${L.length?L.slice(0,150).map(l=>qEntry(l)).join(''):'<div class="empty">ยังไม่มีประวัติ</div>'}</div></section>`;
+  $('#qhf').onchange=()=>{qHistF=$('#qhf').value;qHist();};
+}
+/* ---- แบบฟอร์มบันทึก ---- */
+const qi=(id,label,attrs,opt)=>`<div class="field"><label for="${id}">${label}${opt?' <span class="opt">(ถ้ามี)</span>':''}</label><input id="${id}" ${attrs||''}></div>`;
+const qn=(id,label,attrs)=>qi(id,label,'class="num" type="number" inputmode="decimal" step="any" '+(attrs||''));
+const qnv=el=>{const s=el.value.trim();return s===''?NaN:Number(s);};
+function qHead(f){
+  const now=new Date(), hm=('0'+now.getHours()).slice(-2)+':'+('0'+now.getMinutes()).slice(-2);
+  const size=f==='FM-QC-03'?`<select id="qs" data-keep><option value="">เลือกขนาด</option>${MQ.sizes.map(s=>`<option>${esc(s)}</option>`).join('')}</select>`
+    :`<input id="qs" data-keep list="qsl"><datalist id="qsl">${MQ.sizes.map(s=>`<option value="${esc(s)}">`).join('')}</datalist>`;
+  return `<section class="panel"><div class="grid2 keep"><div class="field"><label for="qd">วันที่ตรวจ</label><input type="date" id="qd" value="${MQ.today}" max="${MQ.today}"></div>
+  <div class="field"><label for="qt">เวลาตรวจ</label><input type="time" id="qt" value="${hm}"></div></div>
+  <div class="field"><label for="qp">ชื่อผลิตภัณฑ์</label><input id="qp" data-keep list="qpl" autocomplete="off"><datalist id="qpl">${MQ.skus.map(s=>`<option value="${esc(s.name)}">`).join('')}</datalist></div>
+  <div class="grid2 keep"><div class="field"><label for="qk">รหัสผลิตภัณฑ์</label><input id="qk" data-keep autocapitalize="characters"></div>${qi('qb','ยี่ห้อ','data-keep',1)}</div>
+  <div class="grid2 keep"><div class="field"><label for="qs">ขนาดกระป๋อง/ฝา</label>${size}</div>
+  <div class="field"><label for="qpd">วันที่ผลิต</label><input type="date" id="qpd" value="${MQ.today}" max="${MQ.today}"></div></div>
+  ${f==='FM-QC-06'?'':`<div class="field"><label for="qbk">เลขตะกร้า retort <span class="opt">(ถ้ามี)</span></label><input id="qbk"><span class="hint">ถ้าไม่ผ่าน ล็อตที่ถูก HOLD = รหัสผลิตภัณฑ์ + วันที่ผลิต + ตะกร้า (ไม่กรอกตะกร้า = ทุกตะกร้าของวันนั้น)</span></div>`}</section>`;
+}
+function qForm(f){
+  const mem=qMemGet(f);
+  let body='';
+  if(f==='FM-QC-01')body=`<section class="panel">${qi('q1sm','Seamer No','data-keep')}<h3>ผลตรวจกระป๋อง (Visual check)</h3><div class="grid2 keep">${[1,2,3,4].map(i=>`<div class="field"><label for="qc${i}">กระป๋องใบที่ ${i}</label><select id="qc${i}" class="qcan"><option value="">เลือก</option><option>ผ่าน</option>${MQ.defects.map(d=>`<option>${esc(d)}</option>`).join('')}</select></div>`).join('')}</div>
+    <div class="warnbox" id="qwarn" hidden>มีกระป๋องไม่ผ่าน • เมื่อบันทึก ล็อตนี้จะถูก HOLD</div>
+    <div class="field"><label for="q1df">ข้อบกพร่องที่พบ <span class="opt">(ถ้ามี)</span></label><textarea id="q1df"></textarea></div>
+    <div class="field"><label for="q1co">การแก้ไข <span class="opt">(ถ้ามี)</span></label><textarea id="q1co"></textarea></div>
+    <div class="field"><label for="q1fo">การติดตามผลการแก้ไข <span class="opt">(ถ้ามี)</span></label><textarea id="q1fo"></textarea></div></section>`;
+  else if(f==='FM-QC-03')body=`<section class="panel"><div class="grid2 keep">${qi('q3sm','Seamer No','data-keep')}${qi('q3gg','เกจวัด Countersink No.','data-keep',1)}</div>
+    <div class="grid2 keep">${qn('q3tb','TB (mm)','data-keep min="0"')}${qn('q3te','TE (mm)','data-keep min="0"')}</div>${qi('q3mc','Can Seam Micrometer No.','data-keep',1)}
+    <p class="hint">ตรวจทุกครั้งก่อนเริ่มผลิต หลังปรับแต่งเครื่อง และทุก 2 ชั่วโมง ทุกหัว Seam (1 ใบ/หัว) • ค่าที่ออกนอกเกณฑ์เป็นสีแดง • AOL, %OL, %BHB, Tightness คำนวณให้อัตโนมัติตามสูตรในแบบฟอร์ม</p></section>
+    ${Array.from({length:MQ.heads},(_,i)=>i+1).map(h=>`<section class="panel"><h3>หัว Seam ที่ ${h}</h3><div class="tbl"><table class="q3t"><thead><tr><th>รายการ</th><th>เกณฑ์</th><th>1</th><th>2</th><th>3</th></tr></thead><tbody>
+    ${[['csd','Countersink (mm)'],['st','ST (mm)'],['sl','SL (mm)'],['ch','CH (mm)'],['bh','BH (mm)']].map(m=>`<tr><td>${m[1]}</td><td class="lim" data-k="${m[0]}">–</td>${[0,1,2].map(r=>`<td><input class="q3 num" type="number" step="any" inputmode="decimal" data-h="${h}" data-k="${m[0]}" data-r="${r}" aria-label="หัว ${h} ${m[1]} ครั้งที่ ${r+1}"></td>`).join('')}</tr>`).join('')}
+    ${[['aol','AOL (mm)'],['ol','%OL'],['bhb','%BHB'],['tr','Tightness %']].map(m=>`<tr class="calcrow"><td>${m[1]}</td><td class="lim" data-k="${m[0]}">–</td>${[0,1,2].map(r=>`<td class="calc num" data-h="${h}" data-k="${m[0]}" data-r="${r}">–</td>`).join('')}</tr>`).join('')}
+    </tbody></table></div></section>`).join('')}
+    <section class="panel"><div class="kpi" id="q3sum"><span>สรุปผลตอนนี้</span><b>–</b></div><div class="field"><label for="q3no">หมายเหตุ <span class="opt">(ถ้ามี)</span></label><textarea id="q3no"></textarea></div></section>`;
+  else if(f==='FM-QC-04'){const iv=MQ.due['FM-QC-04'].every===60?'60':'30';
+    body=`<section class="panel"><div class="field"><span class="lbl">ความถี่การตรวจ</span>${seg('q4i',[['30','ทุก 30 นาที'],['60','ทุก 60 นาที (เพิ่มขนาดปลา/รางนึ่ง/ซอส)']],iv)}</div>
+    <div class="grid2 keep">${qi('q4ln','Line','data-keep')}${qi('q4cu','ชื่อลูกค้า','data-keep',1)}</div>
+    <div class="grid2 keep">${qn('q4fw','F.W. (g)','data-keep',1)}${qn('q4nw','N.W. (g)','data-keep')}</div><div class="grid2 keep">${qn('q4dw','D.W. (g)','data-keep')}${qi('q4sc','รหัสเครื่องชั่ง','data-keep',1)}</div>
+    <div id="q4x" hidden><div class="grid2 keep">${qi('q4fs','ขนาดปลา')}${qn('q4rt','อุณหภูมิรางนึ่ง (°C)')}</div>${qn('q4st','อุณหภูมิซอส (°C)')}</div></section>
+    <section class="panel"><h3>อุณหภูมิปลาก่อนนึ่ง <span class="opt">(≤ ${MQ.preMax} °C)</span></h3><div class="q5">${[1,2,3,4,5].map(i=>`<input class="q4p num" type="number" step="any" inputmode="decimal" aria-label="ก่อนนึ่ง ครั้งที่ ${i}" placeholder="${i}">`).join('')}</div><div class="hint" id="q4pa">เฉลี่ย –</div>
+    <h3>อุณหภูมิปลาหลังนึ่ง <span class="opt">(≤ ${MQ.postMax} °C)</span></h3><div class="q5">${[1,2,3,4,5].map(i=>`<input class="q4q num" type="number" step="any" inputmode="decimal" aria-label="หลังนึ่ง ครั้งที่ ${i}" placeholder="${i}">`).join('')}</div><div class="hint" id="q4qa">เฉลี่ย –</div>
+    <h3>น้ำหนักหลัง Drain น้ำ (g) <span class="opt">(ถ้ามี)</span></h3><div class="q5">${[1,2,3,4,5].map(i=>`<input class="q4d num" type="number" step="any" inputmode="decimal" aria-label="Drain ครั้งที่ ${i}" placeholder="${i}">`).join('')}</div><div class="hint" id="q4da">เฉลี่ย –</div>
+    ${qi('q4pc','จำนวนชิ้น','',1)}<div class="warnbox" id="qwarn" hidden></div></section>`;}
+  else body=`<section class="panel"><div class="grid2 keep">${qn('q6st','เวลาฆ่าเชื้อ (นาที)','data-keep')}${qn('q6tp','อุณหภูมิ (°C)','data-keep')}</div><div class="grid2 keep">${qn('q6fw','Fill weight (g)','data-keep',1)}${qn('q6nw','Net weight (g)','data-keep')}</div>
+    <div class="grid2 keep">${qn('q6dw','Drain weight (g)','data-keep')}${qi('q6cu','ชื่อลูกค้า','data-keep',1)}</div></section>
+    <section class="panel"><h3>ตัวอย่างที่ตรวจ</h3><div id="q6s" class="list"></div><button type="button" class="ghost" id="q6add">+ เพิ่มตัวอย่าง</button></section>
+    <section class="panel"><h3>สรุปผลการตรวจสอบ</h3>${Object.keys(QS6).map(k=>`<div class="field q6k" data-k="${k}"><span class="lbl">${QS6[k]}</span>${seg('q6r_'+k,['ผ่าน','ไม่ผ่าน'],'')}<input class="q6n" placeholder="หมายเหตุ (ถ้ามี)" aria-label="หมายเหตุ ${QS6[k]}"></div>`).join('')}
+    <div class="warnbox" id="qwarn" hidden>มีรายการไม่ผ่าน • เมื่อบันทึก ล็อตที่เกี่ยวข้องจะถูก HOLD</div></section>`;
+  $('#view').innerHTML=`<div class="head"><button type="button" class="back" id="back">← กลับ</button><h2>${f}</h2></div><p class="hint" style="margin:-4px 2px 8px">${QF[f]}</p>
+  <form id="qf" novalidate>${qHead(f)}${body}<div class="err" id="qerr" hidden></div><button type="submit" class="primary" id="qsave">บันทึก</button></form>`;
+  $('#back').onclick=fQc;
+  $$('[data-keep]').forEach(x=>{if(mem[x.id]!=null)x.value=mem[x.id];});
+  $('#qp').addEventListener('change',()=>{const s=MQ.skus.find(x=>x.name===$('#qp').value.trim());if(s&&s.brand&&!$('#qb').value)$('#qb').value=s.brand;});
+  window.scrollTo(0,0);
+  ({'FM-QC-01':q1Init,'FM-QC-03':q3Init,'FM-QC-04':q4Init,'FM-QC-06':q6Init})[f]();
+  $('#qf').onsubmit=e=>{e.preventDefault();
+    const c=({'FM-QC-01':q1Collect,'FM-QC-03':q3Collect,'FM-QC-04':q4Collect,'FM-QC-06':q6Collect})[f](), errs=c.errs;
+    const p=Object.assign({form:f,date:val(null,'#qd'),time:val(null,'#qt'),product:val(null,'#qp'),code:val(null,'#qk'),brand:val(null,'#qb'),canSize:val(null,'#qs'),prodDate:val(null,'#qpd'),basket:val(null,'#qbk')},c.payload);
+    if(!p.product)errs.unshift('กรอกชื่อผลิตภัณฑ์');if(!p.code)errs.splice(p.product?0:1,0,'กรอกรหัสผลิตภัณฑ์');
+    const er=$('#qerr');
+    if(errs.length){er.innerHTML=errs.map(esc).join('<br>');er.hidden=false;er.scrollIntoView({behavior:'smooth',block:'center'});return;}
+    er.hidden=true;const btn=$('#qsave');btn.disabled=true;btn.textContent='กำลังบันทึก…';
+    run('qcSave',p).then(d=>{qSet(d);const m={};$$('[data-keep]').forEach(x=>{m[x.id]=x.value;});qMemSet(f,m);
+      const r=d.logs.find(l=>l.id===d.saved);
+      if(r&&r.result==='ไม่ผ่าน'){toast('บันทึกแล้ว • ไม่ผ่าน → ล็อตถูก HOLD',true);qView='hold';}else{toast('บันทึกแล้ว ✓ ผ่าน');qView='today';}
+      fQc();})
+    .catch(err=>{toast('บันทึกไม่สำเร็จ: '+(err&&err.message||err),true);btn.disabled=false;btn.textContent='บันทึก';});
+  };
+}
+/* FM-QC-01 */
+function q1Init(){const w=()=>{$('#qwarn').hidden=!$$('.qcan').some(x=>x.value&&x.value!=='ผ่าน');};$$('.qcan').forEach(x=>x.onchange=w);}
+function q1Collect(){const errs=[],cans=$$('.qcan').map(x=>x.value);
+  if(!val(null,'#q1sm'))errs.push('กรอก Seamer No');if(!val(null,'#qs'))errs.push('กรอก Can size & Lid');
+  if(cans.some(x=>!x))errs.push('เลือกผลตรวจกระป๋องให้ครบทั้ง 4 ใบ');
+  return {errs,payload:{header:{seamer:val(null,'#q1sm')},rows:{cans,defects:val(null,'#q1df'),correction:val(null,'#q1co'),follow:val(null,'#q1fo')}}};}
+/* FM-QC-03: ค่าที่ออกนอกเกณฑ์เป็นสีแดงทันที + คำนวณ AOL/%OL/%BHB/Tightness ตามสูตรในแบบฟอร์ม */
+const q3Calc=(tb,te,x)=>{const den=x.sl-1.1*(2*te+tb),aol=x.bh+x.ch+1.1*te-x.sl;return {aol,ol:den>0?aol*100/den:NaN,bhb:den>0?(x.bh-1.1*tb)*100/den:NaN,tr:x.st>0?(2*tb+3*te)*100/x.st:NaN};};
+function q3Init(){
+  const lim=()=>MQ.limits[$('#qs').value]||{};
+  const re=()=>{
+    const L=lim(), tb=qnv($('#q3tb')), te=qnv($('#q3te'));let bad=0,filled=0;
+    $$('.lim').forEach(td=>{const x=L[td.dataset.k];td.textContent=!x?'–':x.min!=null&&x.max!=null?x.min+'–'+x.max:x.min!=null?'≥ '+x.min:x.max!=null?'≤ '+x.max:'–';});
+    const out=(k,v)=>{const x=L[k];return !!x&&((x.min!=null&&v<x.min)||(x.max!=null&&v>x.max));};
+    for(let h=1;h<=MQ.heads;h++)for(let r=0;r<MQ.reads;r++){
+      const raw={};let all=true;
+      ['csd','st','sl','ch','bh'].forEach(k=>{const el=document.querySelector(`.q3[data-h="${h}"][data-k="${k}"][data-r="${r}"]`),v=qnv(el);raw[k]=v;if(isNaN(v))all=false;else{filled++;const b=out(k,v);el.classList.toggle('bad',b);if(b)bad++;}if(isNaN(v))el.classList.remove('bad');});
+      const cells=['aol','ol','bhb','tr'].map(k=>document.querySelector(`.calc[data-h="${h}"][data-k="${k}"][data-r="${r}"]`));
+      if(all&&tb>0&&te>0){const c=q3Calc(tb,te,raw);['aol','ol','bhb','tr'].forEach((k,i)=>{const v=c[k],b=!isFinite(v)||out(k,v);cells[i].textContent=isFinite(v)?(k==='aol'?v.toFixed(2):v.toFixed(1)):'–';cells[i].classList.toggle('bad',b);if(b)bad++;});}
+      else cells.forEach(c=>{c.textContent='–';c.classList.remove('bad');});
+    }
+    const need=MQ.heads*MQ.reads*5;
+    $('#q3sum').innerHTML=`<span>สรุปผลตอนนี้ • กรอกแล้ว ${filled}/${need}</span><b class="${bad?'badtxt':''}">${bad?'ไม่ผ่าน '+bad+' ค่า → ล็อตจะถูก HOLD':filled?'ผ่านทุกค่าที่กรอก':'–'}</b>`;
+  };
+  $('#qf').addEventListener('input',re);$('#qf').addEventListener('change',re);re();
+}
+function q3Collect(){const errs=[],heads=[];
+  if(!val(null,'#q3sm'))errs.push('กรอก Seamer No');if(!val(null,'#qs'))errs.push('เลือกขนาดกระป๋อง/ฝา');
+  if(!(qnv($('#q3tb'))>0)||!(qnv($('#q3te'))>0))errs.push('กรอก TB และ TE (mm)');
+  for(let h=1;h<=MQ.heads;h++){const o={};['csd','st','sl','ch','bh'].forEach(k=>{o[k]=[0,1,2].map(r=>document.querySelector(`.q3[data-h="${h}"][data-k="${k}"][data-r="${r}"]`).value.trim());if(o[k].some(v=>v===''||isNaN(Number(v))))errs.push('หัวที่ '+h+': กรอก '+QL3[k]+' ให้ครบ 3 ค่า');});heads.push(o);}
+  return {errs,payload:{header:{seamer:val(null,'#q3sm'),tb:val(null,'#q3tb'),te:val(null,'#q3te'),csdGauge:val(null,'#q3gg'),micrometer:val(null,'#q3mc')},rows:{heads,note:val(null,'#q3no')}}};}
+/* FM-QC-04 */
+function q4Init(){
+  const avg=a=>a.length?(a.reduce((x,y)=>x+y,0)/a.length).toFixed(2):'–';
+  const re=()=>{const g=(c)=>$$(c).map(qnv).filter(v=>!isNaN(v));const pre=g('.q4p'),post=g('.q4q'),dr=g('.q4d');
+    $$('.q4p').forEach(x=>x.classList.toggle('bad',qnv(x)>MQ.preMax));$$('.q4q').forEach(x=>x.classList.toggle('bad',qnv(x)>MQ.postMax));
+    $('#q4pa').textContent='เฉลี่ย '+avg(pre);$('#q4qa').textContent='เฉลี่ย '+avg(post);$('#q4da').textContent='เฉลี่ย '+avg(dr);
+    const bad=pre.filter(v=>v>MQ.preMax).length+post.filter(v=>v>MQ.postMax).length;$('#qwarn').hidden=!bad;$('#qwarn').textContent='มีอุณหภูมิเกินเกณฑ์ '+bad+' ค่า • เมื่อบันทึก ล็อตนี้จะถูก HOLD';};
+  const iv=()=>{$('#q4x').hidden=segVal(null,'q4i')!=='60';};
+  $('#qf').addEventListener('input',re);$('[data-seg="q4i"]').addEventListener('segchange',iv);iv();re();
+}
+function q4Collect(){const errs=[],g=c=>$$(c).map(x=>x.value.trim()).filter(v=>v!=='');const pre=g('.q4p'),post=g('.q4q');
+  [...pre,...post,...g('.q4d')].forEach(v=>{if(isNaN(Number(v)))errs.push('ตัวเลขไม่ถูกต้อง: '+v);});
+  if(!pre.length)errs.push('กรอกอุณหภูมิปลาก่อนนึ่งอย่างน้อย 1 ค่า');if(!post.length)errs.push('กรอกอุณหภูมิปลาหลังนึ่งอย่างน้อย 1 ค่า');
+  const i=segVal(null,'q4i');
+  return {errs:[...new Set(errs)],payload:{header:{interval:Number(i),line:val(null,'#q4ln'),customer:val(null,'#q4cu'),fw:val(null,'#q4fw'),nw:val(null,'#q4nw'),dw:val(null,'#q4dw'),scale:val(null,'#q4sc'),fishSize:val(null,'#q4fs'),rail:val(null,'#q4rt'),sauce:val(null,'#q4st')},rows:{pre,post,drain:g('.q4d'),pieces:val(null,'#q4pc')}}};}
+/* FM-QC-06 */
+let q6n=0;
+function q6Row(){q6n++;const i=q6n;return `<div class="entry q6row" data-i="${i}"><span class="t">ตัวอย่าง</span><button type="button" class="linkbtn q6del">ลบ</button>
+  <div class="grid2 keep" style="grid-column:1/-1"><div class="field"><label>วันที่ผลิต</label><input type="date" class="q6pd" value="${MQ.today}" max="${MQ.today}"></div><div class="field"><label>No. ตะกร้า</label><input class="q6bk"></div></div>
+  <div class="field" style="grid-column:1/-1"><label>ชนิดปลา</label><input class="q6fs"></div>
+  <div class="grid2 keep" style="grid-column:1/-1"><div class="field"><label>Net weight</label><input class="q6nt num" type="number" step="any" inputmode="decimal"></div><div class="field"><label>Drain weight</label><input class="q6dr num" type="number" step="any" inputmode="decimal"></div>
+  <div class="field"><label>Head space</label><input class="q6hs num" type="number" step="any" inputmode="decimal"></div><div class="field"><label>น้ำซอส (ml)</label><input class="q6sc num" type="number" step="any" inputmode="decimal"></div></div>
+  <div class="field" style="grid-column:1/-1"><span class="lbl">ความสมบูรณ์ของกระป๋อง</span>${seg('q6c',['ผ่าน','ไม่ผ่าน'],'')}</div></div>`;}
+function q6Init(){
+  q6n=0;const add=()=>{$('#q6s').insertAdjacentHTML('beforeend',q6Row());};add();
+  $('#q6add').onclick=add;
+  $('#q6s').addEventListener('click',e=>{const d=e.target.closest('.q6del');if(d&&$$('.q6row').length>1)d.closest('.q6row').remove();});
+  $('#qf').addEventListener('segchange',()=>{$('#qwarn').hidden=!($$('.q6row').some(r=>segVal(r,'q6c')==='ไม่ผ่าน')||$$('.q6k').some(k=>segVal(k,'q6r_'+k.dataset.k)==='ไม่ผ่าน'));});
+}
+function q6Collect(){const errs=[];
+  if(!(qnv($('#q6st'))>0))errs.push('กรอกเวลาฆ่าเชื้อ (นาที)');if(!(qnv($('#q6tp'))>0))errs.push('กรอกอุณหภูมิฆ่าเชื้อ (°C)');
+  const samples=$$('.q6row').map((r,i)=>{const o={prodDate:val(r,'.q6pd'),basket:val(r,'.q6bk'),fish:val(r,'.q6fs'),net:val(r,'.q6nt'),drain:val(r,'.q6dr'),head:val(r,'.q6hs'),sauce:val(r,'.q6sc'),can:segVal(r,'q6c')};
+    if(!o.basket)errs.push('ตัวอย่างที่ '+(i+1)+': กรอก No. ตะกร้า');if(!o.can)errs.push('ตัวอย่างที่ '+(i+1)+': เลือกความสมบูรณ์ของกระป๋อง');return o;});
+  const summary={};$$('.q6k').forEach(k=>{const r=segVal(k,'q6r_'+k.dataset.k);if(!r)errs.push('สรุปผล: เลือก ผ่าน / ไม่ผ่าน ที่ '+QS6[k.dataset.k]);summary[k.dataset.k]={r,note:val(k,'.q6n')};});
+  return {errs,payload:{header:{steriMin:val(null,'#q6st'),steriTemp:val(null,'#q6tp'),fw:val(null,'#q6fw'),nw:val(null,'#q6nw'),dw:val(null,'#q6dw'),customer:val(null,'#q6cu')},rows:{samples,summary}}};}
 
 /* ---------- แก้ไขรายการย้อนหลัง 7 วัน ---------- */
 let histRows=[], editing=null, voidArm=false;
